@@ -1,3 +1,12 @@
+// This file configures HOW requests enter your backend before they reach routes.
+// CORS → who can talk to you
+
+// Body parsers → what data you accept
+
+// Static → what files you serve
+
+// Cookies → how auth works
+
 import express from "express"
 import cookieParser from "cookie-parser"
 import cors from "cors"
@@ -10,7 +19,7 @@ app.use(cors({
 }))
 
 app.use(express.json({limit : "16kb"}))
-app.uss(express.urlencoded({extended:"true",limit:"16kb"}))
+app.use(express.urlencoded({extended:"true",limit:"16kb"}))
 app.use(express.static("public"))
 app.use(cookieParser())
 
