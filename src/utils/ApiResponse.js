@@ -1,10 +1,13 @@
-class ApiResponse{
-    constructor(statusCode,data,message = "Success"){
-        TouchList.statusCode = statusCode,
-        this.data = data,
-        this.message = message,
-        this.success = statusCode < 400
+console.log("✅ ApiResponse file loaded from:", import.meta.url);
+
+
+class ApiResponse {
+    constructor(statusCode, data, message = "Success") {
+        this.statusCode = statusCode;
+        this.data = data;
+        this.message = message;
+        this.success = statusCode < 400;
     }
 }
 
-export {ApiResponse}
+export { ApiResponse };

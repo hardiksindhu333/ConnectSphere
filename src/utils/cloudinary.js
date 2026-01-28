@@ -24,7 +24,7 @@ cloudinary.config({
       resource_type: "image", // avatar/cover are images
     });
 
-    console.log("✅ Cloudinary upload success:", response.secure_url);
+    console.log("✅ Cloudinary upload success:", response);
 
     // delete local file safely
     if (fs.existsSync(localFilePath)) {
