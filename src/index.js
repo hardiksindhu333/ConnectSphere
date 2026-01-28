@@ -1,12 +1,14 @@
 // require('dotenv').config({path:'./env'})
-import app from "./app.js";
 import dotenv from "dotenv";
-import connectDB from "./db/index.js";
 
-
+// In ES Modules, dotenv must be executed before other imports
 dotenv.config({
     path:'./.env'
 })
+import app from "./app.js";
+
+
+import connectDB from "./db/index.js";
 
 
 connectDB()
