@@ -1,9 +1,7 @@
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
+import { asyncHandler } from "./asyncHandler";
 
-const uploadOnCloudinary = async (localFilePath) => {
-  try {
-    if (!localFilePath) return null;
 
     
 cloudinary.config({
@@ -12,19 +10,25 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+const uploadOnCloudinary = async (localFilePath) => {
+  try {
+    if (!localFilePath) return null;
+
+
+
 
     //  check env loading (temporary)
-    console.log("Cloudinary ENV CHECK:", {
-      cloud: process.env.CLOUDINARY_CLOUD_NAME,
-      key: process.env.CLOUDINARY_API_KEY ? "OK" : "MISSING",
-      secret: process.env.CLOUDINARY_API_SECRET ? "OK" : "MISSING",
-    });
+    // console.log("Cloudinary ENV CHECK:", {
+    //   cloud: process.env.CLOUDINARY_CLOUD_NAME,
+    //   key: process.env.CLOUDINARY_API_KEY ? "OK" : "MISSING",
+    //   secret: process.env.CLOUDINARY_API_SECRET ? "OK" : "MISSING",
+    // });
 
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "image", // avatar/cover are images
     });
 
-    console.log("✅ Cloudinary upload success:", response);
+    // console.log("✅ Cloudinary upload success:", response);
 
     // delete local file safely
     if (fs.existsSync(localFilePath)) {
@@ -46,7 +50,23 @@ cloudinary.config({
   }
 };
 
-export { uploadOnCloudinary };
+
+const deleteFromCloudinary = async(publicID) =>{
+  try {
+    if(!publicID){
+      return null;
+    }
+
+    const result = await cloudinary.uploader.destroy(publicID);
+    return result;
+  } catch (error) {
+    // console.log("Cloudinary delete error",error);
+
+    return null;
+  }
+}
+
+export { uploadOnCloudinary ,deleteFromCloudinary};
 
 
 
