@@ -6,7 +6,7 @@ import {ApiResponse} from "../utils/ApiResponse.js"
 import jwt from "jsonwebtoken"
 import { Subscription } from "../models/subscription.model.js";
 import mongoose from "mongoose";
-import {ObjectId} from "mongoose"
+import {ObjectId} from "mongodb"
 
 // How to register a user step by step :-
 
@@ -312,9 +312,6 @@ const getCurrentUser = asyncHandler(async(req,res) =>{
 // refreshToken
 
 const updateAccountDetails = asyncHandler(async(req,res) =>{
-//     "Do I need middleware?"
-// If YES → .save()(more reasons also, slow,2 db query)
-// If NO → findByIdAndUpdate().(this is faster , 1 db query)
 
     const {fullName,email} = req.body
     if(!fullName || !email){
@@ -356,7 +353,6 @@ const updateUserAvatar = asyncHandler(async(req,res) =>{
     if(!avatar?.secure_url){
         throw new ApiError(400,"error while uploading on avatar")
     }
-    // I would move Cloudinary deletion into a background job queue to prevent blocking request-response cycle and improve reliability.(faster,scale)
 
     const olduser = await User.findById(req.user._id).select("avatar")
 
@@ -403,7 +399,6 @@ const updateUserCoverImage = asyncHandler(async(req,res) =>{
     if(!coverImage?.secure_url){
         throw new ApiError(400,"error while uploading cover image")
     }
-    // I would move Cloudinary deletion into a background job queue to prevent blocking request-response cycle and improve reliability.(faster,scale)
 
     const olduser = await User.findById(req.user._id).select("coverImage")
 
@@ -459,7 +454,7 @@ const getUserChannelProfile = asyncHandler(async(req,res) =>{
                 from:"subscriptions",
                 localField:"_id",
                 foreignField:"channel",
-                as:"subscibers"
+                as:"subscribers"
             }
         },
         {
@@ -467,29 +462,29 @@ const getUserChannelProfile = asyncHandler(async(req,res) =>{
                 from:"subscriptions",
                 localField:"_id",
                 foreignField:"subscriber",
-                as:"SubscribedTo"
+                as:"subscribedTo"
             }
         },
         {
             $addFields:{
                 subscriberCount:{
-                    $size: $subscribers
+                    $size: "$subscribers"
                 },
-                ChannelsSubscribedToCount:{
-                    $size:$subscribedTo
+                channelsSubscribedToCount:{
+                    $size:"$subscribedTo"
                 },
-                isSubscribed:loggedInUserId?{
-                    $cond:{
-                        $in:[loggedInUserId,"$subscribers.subscriber"],
+                isSubscribed: loggedInUserId
+                ? {
+                    $in: [loggedInUserId, "$subscribers.subscriber"]
                     }
-                }:false
+                : false
             }
         },
         {
             $project:{
                 fullName: 1,
                 username: 1,
-                subscribersCount: 1,
+                subscriberCount: 1,
                 channelsSubscribedToCount: 1,
                 isSubscribed: 1,
                 avatar: 1,
@@ -530,14 +525,14 @@ const getWatchHistory = asyncHandler(async(req,res) =>{
                 _id: userID
             }
         },
-        {//get videos in watchHistory,currently in user
+        {
             $lookup:{
                 from:"videos",
                 localField:"watchHistory",
                 foreignField:"_id",
                 as:"watchHistory",
                 pipeline:[
-                    {//get video owner,currently in videos
+                    {
                         $lookup:{
                             from:"users",
                             localField:"owner",
@@ -554,7 +549,7 @@ const getWatchHistory = asyncHandler(async(req,res) =>{
                             ]
                         }
                     },
-                    {//convert owner array → object
+                    {
                         $addFields:{
                             owner :{$first :"$owner"}
                         }
@@ -565,11 +560,14 @@ const getWatchHistory = asyncHandler(async(req,res) =>{
         }
     ])
 
+    if(!user.length){
+        throw new ApiError(404,"User not found")
+    }
+
     return res
     .status(200)
     .json(new ApiResponse(200,user[0].watchHistory,"watch history fetched successfully"))
 })
-
 
 
 export {registerUser,
