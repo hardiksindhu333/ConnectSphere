@@ -6,6 +6,7 @@ import {ApiResponse} from "../utils/ApiResponse.js"
 import jwt from "jsonwebtoken"
 import { Subscription } from "../models/subscription.model.js";
 import mongoose from "mongoose";
+import {ObjectId} from "mongoose"
 
 // How to register a user step by step :-
 
@@ -514,6 +515,60 @@ const getUserChannelProfile = asyncHandler(async(req,res) =>{
 )
 
 
+// Get logged-in user id
+// Find that user using $match
+// $lookup videos from videos collection
+// $lookup owner from users collection
+// Clean response using $project
+
+const getWatchHistory = asyncHandler(async(req,res) =>{
+    const userID = new ObjectId(req.user._id)
+
+    const user = await User.aggregate([
+        {
+            $match:{
+                _id: userID
+            }
+        },
+        {//get videos in watchHistory,currently in user
+            $lookup:{
+                from:"videos",
+                localField:"watchHistory",
+                foreignField:"_id",
+                as:"watchHistory",
+                pipeline:[
+                    {//get video owner,currently in videos
+                        $lookup:{
+                            from:"users",
+                            localField:"owner",
+                            foreignField:"_id",
+                            as:"owner",
+                            pipeline:[
+                                {
+                                    $project:{
+                                        username:1,
+                                        fullName:1,
+                                        avatar:1
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {//convert owner array → object
+                        $addFields:{
+                            owner :{$first :"$owner"}
+                        }
+                    }
+
+                ]
+            }
+        }
+    ])
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200,user[0].watchHistory,"watch history fetched successfully"))
+})
 
 
 
@@ -526,4 +581,5 @@ export {registerUser,
     updateAccountDetails,
     updateUserAvatar,
     updateUserCoverImage,
-    getUserChannelProfile}
+    getUserChannelProfile,
+    getWatchHistory}
