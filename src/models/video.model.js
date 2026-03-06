@@ -31,6 +31,10 @@ const videoSchema = new Schema(
             type : Boolean,
             default : true
         },
+        likesCount:{
+            type:Number,
+            default:0
+        },
         owner :{
             type : Schema.Types.ObjectId,
             ref : "User"
