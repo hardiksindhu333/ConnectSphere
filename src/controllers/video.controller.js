@@ -103,6 +103,119 @@ const sortField = allowedSortFields.includes(sortBy)
 
 })
 
+const getVideoFeed = asyncHandler(async (req, res) => {
+
+    const userId = req.user?._id
+
+    const pipeline = [
+
+        {
+            $match: {
+                isPublished: true
+            }
+        },
+
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            username: 1,
+                            avatar: 1
+                        }
+                    }
+                ]
+            }
+        },
+
+        {
+            $addFields: {
+                owner: { $first: "$owner" }
+            }
+        },
+
+        {
+            $lookup: {
+                from: "comments",
+                localField: "_id",
+                foreignField: "video",
+                as: "comments"
+            }
+        },
+
+        {
+            $addFields: {
+                commentsCount: { $size: "$comments" }
+            }
+        }
+
+    ]
+
+
+    // personalized stages
+    if (userId) {
+
+        pipeline.push({
+            $lookup: {
+                from: "subscriptions",
+                localField: "owner._id",
+                foreignField: "channel",
+                as: "subscribers"
+            }
+        })
+
+        pipeline.push({
+            $addFields: {
+                channelSubscriberCount: { $size: "$subscribers" },
+                isSubscribed: {
+                    $in: [
+                        new mongoose.Types.ObjectId(userId),
+                        "$subscribers.subscriber"
+                    ]
+                }
+            }
+        })
+
+    }
+
+
+    // always remove heavy arrays
+    pipeline.push({
+        $project: {
+            comments: 0,
+            subscribers: 0
+        }
+    })
+
+
+    pipeline.push(
+        {
+            $sort: {
+                createdAt: -1
+            }
+        },
+        {
+            $limit: 20
+        }
+    )
+
+
+
+    const videos = await Video.aggregate(pipeline)
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            videos,
+            "Video feed fetched successfully"
+        )
+    )
+
+})
 
 const publishAVideo = asyncHandler(async(req,res) =>{
 // Get title, description from req.body.
@@ -217,6 +330,19 @@ const getVideoById = asyncHandler(async(req,res)=>{
         }
     ])
 
+    let isLikedByUser = false
+
+    if (req.user?._id) {
+        const like = await Like.findOne({
+            video: videoId,
+            likedBy: req.user._id
+        })
+
+        if (like) {
+            isLikedByUser = true
+        }
+    }
+
     if(!video.length){
         throw new ApiError(404,"video not found")
     }
@@ -258,7 +384,7 @@ const getVideoById = asyncHandler(async(req,res)=>{
        return res.status(200).json(
         new ApiResponse(
             200,
-            video[0],
+            {...video[0],isLikedByUser},
             "Video fetched successfully"
         )
     )
@@ -444,5 +570,6 @@ export {getAllVideos,
     getVideoById,
     updateVideo,
     deleteVideo,
-    togglePublishStatus
+    togglePublishStatus,
+    getVideoFeed
 };
