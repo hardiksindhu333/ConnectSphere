@@ -1,7 +1,5 @@
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
-import { asyncHandler } from "./asyncHandler";
-
 
     
 cloudinary.config({
@@ -25,7 +23,7 @@ const uploadOnCloudinary = async (localFilePath) => {
     // });
 
     const response = await cloudinary.uploader.upload(localFilePath, {
-      resource_type: "image", // avatar/cover are images
+      resource_type: "auto", // avatar/cover are images
     });
 
     // console.log("✅ Cloudinary upload success:", response);
@@ -51,13 +49,15 @@ const uploadOnCloudinary = async (localFilePath) => {
 };
 
 
-const deleteFromCloudinary = async(publicID) =>{
+const deleteFromCloudinary = async(publicID,resourceType="image") =>{
   try {
     if(!publicID){
       return null;
     }
 
-    const result = await cloudinary.uploader.destroy(publicID);
+    const result = await cloudinary.uploader.destroy(publicID,{
+      resource_type:resourceType
+    });
     return result;
   } catch (error) {
     // console.log("Cloudinary delete error",error);

@@ -4,8 +4,6 @@ import { User } from "../models/user.model.js";
 import {deleteFromCloudinary, uploadOnCloudinary} from "../utils/cloudinary.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import jwt from "jsonwebtoken"
-import { Subscription } from "../models/subscription.model.js";
-import mongoose from "mongoose";
 import {ObjectId} from "mongodb"
 
 // How to register a user step by step :-
@@ -66,12 +64,12 @@ if (
         throw new ApiError(400,"avatar file is required");
     }
 
-    console.log("STEP 5: Starting Cloudinary upload");
-    console.log("AVATAR LOCAL PATH:", avatarLocalpath);
-    console.log("COVER IMAGE LOCAL PATH:", coverImageLocalpath);
+    // console.log("STEP 5: Starting Cloudinary upload");
+    // console.log("AVATAR LOCAL PATH:", avatarLocalpath);
+    // console.log("COVER IMAGE LOCAL PATH:", coverImageLocalpath);
 
     const avatar = await uploadOnCloudinary(avatarLocalpath);
-    console.log("AVATAR CLOUDINARY RESPONSE:", avatar);
+    // console.log("AVATAR CLOUDINARY RESPONSE:", avatar);
 
 
     if(!avatar){
@@ -80,16 +78,16 @@ if (
 
     let coverImage;
     if(coverImageLocalpath){
-        console.log("Uploading cover image...");
+        // console.log("Uploading cover image...");
         coverImage = await uploadOnCloudinary(coverImageLocalpath);
-        console.log("COVER IMAGE CLOUDINARY RESPONSE:", coverImage);
+        // console.log("COVER IMAGE CLOUDINARY RESPONSE:", coverImage);
     }
 
     // url → uses HTTP
     // secure_url → uses HTTPS
 
-    console.log("FINAL AVATAR URL:", avatar?.secure_url);
-    console.log("FINAL COVER URL:", coverImage?.secure_url);
+    // console.log("FINAL AVATAR URL:", avatar?.secure_url);
+    // console.log("FINAL COVER URL:", coverImage?.secure_url);
 
 
     const user = await User.create({
@@ -120,7 +118,7 @@ if (
         throw new ApiError(500, "Something went wrong while registering the user")
     }
 
-    console.log("👉 SENDING RESPONSE");
+    // console.log("👉 SENDING RESPONSE");
 
 
 return res.status(201).json(
@@ -430,7 +428,7 @@ const updateUserCoverImage = asyncHandler(async(req,res) =>{
 
 })
 
-
+//static pipelines(You directly pass the entire pipeline array.) will be used in these 2 func as queries are fixed
 
 const getUserChannelProfile = asyncHandler(async(req,res) =>{
     const {username} = req.params
