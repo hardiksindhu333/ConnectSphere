@@ -28,7 +28,7 @@ const getAllVideos = asyncHandler(async(req,res) =>{
    const matchStage = {}
 
     // show only published videos for public users
-    if (!userId || userId !== req.user?._id?.toString()) {
+    if (!req.user || userId !== req.user._id.toString()) {
         matchStage.isPublished = true
     }
     if (query) {
