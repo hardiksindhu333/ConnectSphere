@@ -10,4 +10,32 @@ import { toggleCommentLike,
 const router = Router()
 
 
+router.post(
+    "/video/:videoId",
+    verifyJWT,
+    toggleVideoLike
+)
+
+
+router.post(
+    "/comment/:commentId",
+    verifyJWT,
+    toggleCommentLike
+)
+
+
+router.post(
+    "/tweet/:tweetId",
+    verifyJWT,
+    toggleTweetLike
+)
+
+
+router.get(
+    "/videos",
+    verifyJWT,
+    getLikedVideos
+)
+
+
 export default router
