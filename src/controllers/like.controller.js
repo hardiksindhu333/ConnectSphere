@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
 import { asyncHandler } from "../utils/asyncHandler";
 import { Like } from "../models/like.model";
+import { Comment } from "../models/comment.model";
 
 
 
@@ -19,6 +20,10 @@ const toggleVideoLike = asyncHandler(async(req,res) =>{
 
     if(!videoId){
         throw new ApiError(400,"videoId is missing")
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
+        throw new ApiError(400, "Invalid videoId");
     }
 
     const existingVideoLike = await Like.findOne({
@@ -60,6 +65,10 @@ const toggleCommentLike = asyncHandler(async(req,res) =>{
         throw new ApiError(400,"commentId is missing")
     }
 
+    if (!mongoose.Types.ObjectId.isValid(commentId)) {
+        throw new ApiError(400, "Invalid commentId");
+    }
+
     const existingCommentLike = await Like.findOne({
         likedBy:userId,
         comment:commentId
@@ -67,6 +76,10 @@ const toggleCommentLike = asyncHandler(async(req,res) =>{
 
     if(existingCommentLike){
         await Like.findByIdAndDelete(existingCommentLike._id)
+
+         await Comment.findByIdAndUpdate(commentId, {
+            $inc: { likesCount: -1 }
+        });
 
         return res.status(200)
         .json(new ApiResponse(200,{},"comment unliked successfully"))
@@ -76,6 +89,10 @@ const toggleCommentLike = asyncHandler(async(req,res) =>{
         likedBy :userId,
         comment :commentId
     })
+
+     await Comment.findByIdAndUpdate(commentId, {
+        $inc: { likesCount: 1 }
+    }, { new: true });
 
    return res.status(200)
     .json(new ApiResponse(200,CommentLike,"comment liked successfully"))
@@ -95,6 +112,10 @@ const toggleTweetLike = asyncHandler(async(req,res) =>{
 
     if(!tweetId){
         throw new ApiError(400,"tweetId is missing")
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(tweetId)) {
+        throw new ApiError(400, "Invalid tweetId");
     }
 
     const existingTweetLike =await Like.findOne({
