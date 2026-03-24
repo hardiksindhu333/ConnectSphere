@@ -60,6 +60,12 @@ const userSchema = new Schema(
         refreshToken :{
             type : String
 
+        },
+        verificationOTP: String,
+        verificationOTPExpiry: Date,
+        isVerified: {
+            type: Boolean,
+            default: false
         }
     },
     {
