@@ -5,6 +5,8 @@ import { changeCurrentPassword,
     getUserChannelProfile,
     getWatchHistory,
     loginUser, 
+    verifyOTP,
+    resendOTP,
     logoutUser, 
     refreshAccessToken, 
     registerUser,
@@ -27,6 +29,11 @@ router.route("/register").post(
         }
     ]),
     registerUser)
+
+
+    router.post("/verify-otp", verifyOTP);
+
+    router.post("/resend-otp", resendOTP);
 
     router.route("/login").post(loginUser)
 

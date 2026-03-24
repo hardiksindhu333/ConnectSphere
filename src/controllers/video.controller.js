@@ -1,13 +1,13 @@
-import { asyncHandler } from "../utils/asyncHandler";
-import { ApiError } from "../utils/ApiError";
-import { ApiResponse } from "../utils/ApiResponse";
-import { User } from "../models/user.model";
-import { Video } from "../models/video.model";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { ApiError } from "../utils/ApiError.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { User } from "../models/user.model.js";
+import { Video } from "../models/video.model.js";
 import {Like} from "../models/like.model.js"
 import {Comment} from "../models/comment.model.js"
 import { Playlist } from "../models/playlist.model.js";
 import mongoose from "mongoose";
-import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary";
+import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 
 //we will use dynamic pipeline beacuse some filters may not exist , ex -GET /videos,GET /videos?query=node, GET /videos?userId=123, GET /videos?query=node&userId=123
 

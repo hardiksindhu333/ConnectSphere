@@ -5,7 +5,8 @@ import {deleteFromCloudinary, uploadOnCloudinary} from "../utils/cloudinary.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import jwt from "jsonwebtoken"
 import {ObjectId} from "mongodb"
-
+import crypto from "crypto"
+import { resend } from "../utils/resend.js";
 // How to register a user step by step :-
 
 // 1. ask user to fill details in frontend(username,email etc.)
@@ -35,98 +36,178 @@ const generateAcessTokenandRefreshToken = async(userId) =>{
     }
 }
 
-const registerUser = asyncHandler(async (req,res) => {
-    const {username, email, password,fullName} = req.body;
-    // console.log("email" ,email);
+const registerUser = asyncHandler(async (req, res) => {
 
-//     if(!username?.trim() || !email?.trim() || !password?.trim() || !fullName?.trim()){
-//         throw new ApiError(400,"all feilds are required");
-//     }
-if (
-       [fullName, username, password, email].some(
-        (field) => typeof field !== "string" || field.trim() === ""
-)
+    const { username, email, password, fullName } = req.body;
+
+    if (
+        [fullName, username, password, email].some(
+            (field) => typeof field !== "string" || field.trim() === ""
+        )
     ) {
-        throw new ApiError(400, "All fields are required")
+        throw new ApiError(400, "All fields are required");
     }
 
     const existingUser = await User.findOne({
-        $or: [{username},{email}]
+        $or: [{ username }, { email }]
     });
 
-    if(existingUser){
-        throw new ApiError(409,"user already exists");
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    if (existingUser) {
+
+        if (existingUser.isVerified) {
+            throw new ApiError(400, "User already exists");
+        }
+
+        existingUser.verificationOTP = otp;
+        existingUser.verificationOTPExpiry = Date.now() + 10 * 60 * 1000;
+        existingUser.password = password;
+
+        await existingUser.save();
+
+        await resend.emails.send({
+            from: "onboarding@resend.dev",
+            to: existingUser.email,
+            subject: "Verify your account",
+            html: `
+            <h2>Welcome to ConnectSphere </h2>
+            <p>Your OTP is:</p>
+            <h1>${otp}</h1>
+            <p>This OTP expires in 10 minutes</p>
+        `
+        });
+
+        return res.status(200).json(
+            new ApiResponse(200, {}, "OTP resent. Please verify your email")
+        );
     }
+
 
     const avatarLocalpath = req.files?.avatar?.[0]?.path;
     const coverImageLocalpath = req.files?.coverImage?.[0]?.path;
-    if(!avatarLocalpath){
-        throw new ApiError(400,"avatar file is required");
+
+    if (!avatarLocalpath) {
+        throw new ApiError(400, "Avatar file is required");
     }
 
-    // console.log("STEP 5: Starting Cloudinary upload");
-    // console.log("AVATAR LOCAL PATH:", avatarLocalpath);
-    // console.log("COVER IMAGE LOCAL PATH:", coverImageLocalpath);
-
     const avatar = await uploadOnCloudinary(avatarLocalpath);
-    // console.log("AVATAR CLOUDINARY RESPONSE:", avatar);
 
-
-    if(!avatar){
-        throw new ApiError(400,"avatar file is required");
+    if (!avatar) {
+        throw new ApiError(400, "Avatar upload failed");
     }
 
     let coverImage;
-    if(coverImageLocalpath){
-        // console.log("Uploading cover image...");
+    if (coverImageLocalpath) {
         coverImage = await uploadOnCloudinary(coverImageLocalpath);
-        // console.log("COVER IMAGE CLOUDINARY RESPONSE:", coverImage);
     }
-
-    // url → uses HTTP
-    // secure_url → uses HTTPS
-
-    // console.log("FINAL AVATAR URL:", avatar?.secure_url);
-    // console.log("FINAL COVER URL:", coverImage?.secure_url);
-
 
     const user = await User.create({
         fullName,
-        username:username.toLowerCase(),
+        username: username.toLowerCase(),
         email,
         password,
-        avatar:{
-            url:avatar.secure_url,
-            public_id :avatar.public_id
-        } ,
+        avatar: {
+            url: avatar.secure_url,
+            public_id: avatar.public_id
+        },
         coverImage: coverImage
             ? {
                 url: coverImage.secure_url,
                 public_id: coverImage.public_id
             }
-            : undefined
-    }) ;
+            : undefined,
+        verificationOTP: otp,
+        verificationOTPExpiry: Date.now() + 10 * 60 * 1000,
+        isVerified: false
+    });
 
-    if(!user){
-        throw new ApiError(500,"User registration failed");
+    if (!user) {
+        throw new ApiError(500, "User registration failed");
     }
 
-    const createdUser = await User.findById(user._id).select("-password -refreshToken")
+    await resend.emails.send({
+        from: "onboarding@resend.dev",
+        to: user.email,
+        subject: "Verify your account",
+        html: `
+            <h2>Welcome to ConnectSphere </h2>
+            <p>Your OTP is:</p>
+            <h1>${otp}</h1>
+            <p>This OTP expires in 10 minutes</p>
+        `
+    });
 
+    const createdUser = await User.findById(user._id).select("-password -refreshToken");
 
-    if (!createdUser) {
-        throw new ApiError(500, "Something went wrong while registering the user")
-    }
-
-    // console.log("👉 SENDING RESPONSE");
-
-
-return res.status(201).json(
-   new ApiResponse(200, createdUser, "User registered Successfully") 
-);
-
+    return res.status(201).json(
+        new ApiResponse(200, createdUser, "User registered. Please verify your email")
+    );
 });
 
+
+const verifyOTP = asyncHandler(async (req, res) => {
+
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+        throw new ApiError(400, "Email and OTP required");
+    }
+
+    const user = await User.findOne({
+        email,
+        verificationOTP: otp,
+        verificationOTPExpiry: { $gt: Date.now() }
+    });
+
+    if (!user) {
+        throw new ApiError(400, "Invalid or expired OTP");
+    }
+
+    user.isVerified = true;
+    user.verificationOTP = undefined;
+    user.verificationOTPExpiry = undefined;
+
+    await user.save();
+
+    return res.status(200).json(
+        new ApiResponse(200, {}, "Account verified successfully")
+    );
+});
+
+
+const resendOTP = asyncHandler(async (req, res) => {
+
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    if (user.isVerified) {
+        throw new ApiError(400, "User already verified");
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    user.verificationOTP = otp;
+    user.verificationOTPExpiry = Date.now() + 10 * 60 * 1000;
+
+    await user.save();
+
+    await resend.emails.send({
+        from: "onboarding@resend.dev",
+        to: email,
+        subject: "OTP Resent",
+        html: `<h2>${otp}</h2>`
+    });
+
+    return res.status(200).json(
+        new ApiResponse(200, {}, "OTP resent successfully")
+    );
+});
 
 
 const loginUser = asyncHandler(async (req,res)=>{
@@ -569,6 +650,8 @@ const getWatchHistory = asyncHandler(async(req,res) =>{
 
 
 export {registerUser,
+    verifyOTP,
+    resendOTP,
     loginUser,
     logoutUser,
     refreshAccessToken,
