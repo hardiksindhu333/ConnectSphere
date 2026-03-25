@@ -66,6 +66,13 @@ const userSchema = new Schema(
         isVerified: {
             type: Boolean,
             default: false
+        },
+
+        resetPasswordOTP: {
+            type: String
+        },
+        resetPasswordOTPExpiry: {
+            type: Date
         }
     },
     {

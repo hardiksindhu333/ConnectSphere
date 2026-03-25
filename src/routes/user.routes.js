@@ -7,6 +7,8 @@ import { changeCurrentPassword,
     loginUser, 
     verifyOTP,
     resendOTP,
+    forgotPassword,
+    resetPassword,
     logoutUser, 
     refreshAccessToken, 
     registerUser,
@@ -34,6 +36,9 @@ router.route("/register").post(
     router.post("/verify-otp", verifyOTP);
 
     router.post("/resend-otp", resendOTP);
+
+    router.post("/forgot-password", forgotPassword);
+    router.post("/reset-password", resetPassword);
 
     router.route("/login").post(loginUser)
 
