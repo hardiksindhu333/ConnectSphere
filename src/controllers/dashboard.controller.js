@@ -81,32 +81,49 @@ const getChannelStats = asyncHandler(async(req,res) =>{
 
 
 const getChannelVideos = asyncHandler(async (req, res) => {
-// 1. Get logged-in userId
+// 1. Get userId
 
-// 2. From Video collection:
-//    → match videos where owner = userId
+// 2. Read query params:
+//    → page (default = 1)
+//    → limit (default = 10)
 
-// 3. For each video:
-//    → lookup likes
-//    → lookup comments
+// 3. Calculate:
+//    → skip = (page - 1) * limit
 
-// 4. Add:
+// 4. Aggregate:
+//    → match user's videos
+//    → sort latest first
+//    → skip
+//    → limit
+
+// 5. Add:
 //    → likesCount
 //    → commentsCount
 
-// 5. Sort by latest videos
+// 6. Also get total count of videos
 
-// 6. Return list
+// 7. Return:
+//    → videos
+//    → pagination info
 
     const userId = new mongoose.Types.ObjectId(req.user?._id)
     if(!userId){
         throw new ApiError(404,"user not found")
     }
 
+    const page = parseInt(req.query.page) ||1
+    const limit = parseInt(req.query.limit) ||10
+
+    const skip = (page-1)*10
+
     const videos = await Video.aggregate([
         {
             $match:{owner:userId}
         },
+        { $sort: { createdAt: -1 } },
+
+        { $skip: skip },
+        { $limit: limit },
         {
             $lookup:{
                 from:"likes",
@@ -140,14 +157,23 @@ const getChannelVideos = asyncHandler(async (req, res) => {
                 thumbnail:1
             }
         },
-        {
-            $sort:{createdAt:-1}
-        }
+        
     ])
 
+    const totalVideos = await Video.countDocuments({ owner: userId });
+
+
     return res.status(200).json(
-        new ApiResponse(200, videos, "Channel videos fetched successfully")
-    );
+        new ApiResponse(200, {
+            videos,
+            pagination: {
+                totalVideos,
+                currentPage: page,
+                totalPages: Math.ceil(totalVideos / limit),
+                limit
+            }
+        }, "Channel videos fetched successfully")
+    )
 
 })
 
