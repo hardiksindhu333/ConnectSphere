@@ -81,7 +81,74 @@ const getChannelStats = asyncHandler(async(req,res) =>{
 
 
 const getChannelVideos = asyncHandler(async (req, res) => {
-    // TODO: Get all the videos uploaded by the channel
+// 1. Get logged-in userId
+
+// 2. From Video collection:
+//    → match videos where owner = userId
+
+// 3. For each video:
+//    → lookup likes
+//    → lookup comments
+
+// 4. Add:
+//    → likesCount
+//    → commentsCount
+
+// 5. Sort by latest videos
+
+// 6. Return list
+
+    const userId = new mongoose.Types.ObjectId(req.user?._id)
+    if(!userId){
+        throw new ApiError(404,"user not found")
+    }
+
+    const videos = await Video.aggregate([
+        {
+            $match:{owner:userId}
+        },
+        {
+            $lookup:{
+                from:"likes",
+                localField:"_id",
+                foreignField:"video",
+                as:"likes"
+            }
+        },
+        {
+            $lookup:{
+                from:"comments",
+                localField:"_id",
+                foreignField:"video",
+                as:"comments"
+            }
+        },
+        {
+            $addFields:{
+                likesCount:{$size:"$likes"},
+                commentsCount:{$size:"$comments"}
+            }
+        },
+        {
+            $project:{
+                title:1,
+                description:1,
+                views:1,
+                createdAt:1,
+                likesCount:1,
+                commentsCount:1,
+                thumbnail:1
+            }
+        },
+        {
+            $sort:{createdAt:-1}
+        }
+    ])
+
+    return res.status(200).json(
+        new ApiResponse(200, videos, "Channel videos fetched successfully")
+    );
+
 })
 
 export {
