@@ -131,7 +131,7 @@ const updateTweet = asyncHandler(async (req, res) => {
     }
 
     if(tweet.owner.toString() !== req.user._id.toString()){
-        throw new ApiError(403,"unauthorised access")
+        throw new ApiError(403,"unauthorized access")
     }
 
     tweet.content = content.trim();
@@ -162,7 +162,7 @@ const deleteTweet = asyncHandler(async (req, res) => {
     }
 
     if(tweet.owner.toString() !== req.user._id.toString()){
-        throw new ApiError(403,"unauthorised access")
+        throw new ApiError(403,"unauthorized access")
     }
 
      await tweet.deleteOne();

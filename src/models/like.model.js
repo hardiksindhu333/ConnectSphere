@@ -27,7 +27,6 @@ const likeSchema = new Schema(
 { timestamps: true }
 );
 
-// prevent duplicate likes
 likeSchema.index({ likedBy: 1, video: 1 }, { unique: true, sparse: true });
 likeSchema.index({ likedBy: 1, comment: 1 }, { unique: true, sparse: true });
 likeSchema.index({ likedBy: 1, tweet: 1 }, { unique: true, sparse: true });

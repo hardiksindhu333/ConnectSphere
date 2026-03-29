@@ -1,5 +1,43 @@
 import { Router } from "express";
+import {
+    createTweet,
+    getUserTweets,
+    updateTweet,
+    deleteTweet,
+    toggleTweetLike
+} from "../controllers/tweet.controller.js";
 
-const router = Router()
+import { verifyJWT } from "../middlewares/auth.middleware.js";
 
-export default router
+const router = Router();
+
+router.post(
+    "/",
+    verifyJWT,
+    createTweet
+);
+
+router.get(
+    "/user/:userId",
+    getUserTweets
+);
+
+router.patch(
+    "/:tweetId",
+    verifyJWT,
+    updateTweet
+);
+
+router.delete(
+    "/:tweetId",
+    verifyJWT,
+    deleteTweet
+);
+
+router.put(
+    "/:tweetId/like",
+    verifyJWT,
+    toggleTweetLike
+);
+
+export default router;
