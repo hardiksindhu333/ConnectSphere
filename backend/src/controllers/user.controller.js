@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken"
 import {ObjectId} from "mongodb"
 import crypto from "crypto"
 import bcrypt from "bcrypt"; 
-import { resend } from "../utils/resend.js";
+import { getResendClient } from "../utils/resend.js";
 // How to register a user step by step :-
 
 // 1. ask user to fill details in frontend(username,email etc.)
@@ -68,9 +68,11 @@ const registerUser = asyncHandler(async (req, res) => {
         existingUser.password = password;
 
         await existingUser.save();
+        const resend = getResendClient();
+
 
         await resend.emails.send({
-            from: "onboarding@resend.dev",
+            from: process.env.EMAIL_FROM,
             to: existingUser.email,
             subject: "Verify your account",
             html: `
@@ -130,8 +132,10 @@ const registerUser = asyncHandler(async (req, res) => {
         throw new ApiError(500, "User registration failed");
     }
 
+    const resend = getResendClient();
+
     await resend.emails.send({
-        from: "onboarding@resend.dev",
+        from: process.env.EMAIL_FROM,
         to: user.email,
         subject: "Verify your account",
         html: `
@@ -208,9 +212,11 @@ const resendOTP = asyncHandler(async (req, res) => {
     user.verificationOTPExpiry = Date.now() + 10 * 60 * 1000;
 
     await user.save();
+    const resend = getResendClient();
+
 
     await resend.emails.send({
-        from: "onboarding@resend.dev",
+        from: process.env.EMAIL_FROM,
         to: email,
         subject: "OTP Resent",
         html: `<h2>${otp}</h2>`
@@ -244,8 +250,11 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
     await user.save({ validateBeforeSave: false });
 
+    const resend = getResendClient();
+
+
     await resend.emails.send({
-        from: "onboarding@resend.dev",
+        from: process.env.EMAIL_FROM,
         to: email,
         subject: "Reset Your Password",
         html: `

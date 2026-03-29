@@ -2,9 +2,7 @@
 import dotenv from "dotenv";
 
 // In ES Modules, dotenv must be executed before other imports
-dotenv.config({
-    path:'./.env'
-})
+dotenv.config();
 import app from "./app.js";
 
 
