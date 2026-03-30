@@ -4,6 +4,7 @@ import {
     getVideoFeed,
     getVideoById,
     publishAVideo,
+    getMyVideos,
     updateVideo,
     deleteVideo,
     togglePublishStatus
@@ -11,32 +12,15 @@ import {
 
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
-
 const router = Router();
 
+router.get("/feed", getVideoFeed);
 
+router.get("/my-videos", verifyJWT, getMyVideos);
 
-router.get(
-    "/feed",
-    getVideoFeed
-);
+router.get("/", getAllVideos);
 
-
-
-
-router.get(
-    "/",
-    getAllVideos
-);
-
-
-
-router.get(
-    "/:videoId",
-    getVideoById
-);
-
-
+router.get("/:videoId", getVideoById);
 
 router.post(
     "/publish",
@@ -48,8 +32,6 @@ router.post(
     publishAVideo
 );
 
-
-
 router.patch(
     "/:videoId",
     verifyJWT,
@@ -57,20 +39,16 @@ router.patch(
     updateVideo
 );
 
-
 router.delete(
     "/:videoId",
     verifyJWT,
     deleteVideo
 );
 
-
 router.patch(
     "/:videoId/toggle-publish",
     verifyJWT,
     togglePublishStatus
 );
-
-
 
 export default router;

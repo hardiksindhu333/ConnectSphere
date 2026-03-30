@@ -282,7 +282,15 @@ const publishAVideo = asyncHandler(async(req,res) =>{
     )
 })
 
+const getMyVideos = asyncHandler(async (req, res) => {
+    const videos = await Video.find({
+        owner: req.user._id
+    }).populate("owner", "fullName");
 
+    return res.status(200).json(
+        new ApiResponse(200, videos, "User videos fetched")
+    );
+});
 
 const getVideoById = asyncHandler(async(req,res)=>{
 // Get videoId from req.params.
@@ -567,6 +575,7 @@ const togglePublishStatus = asyncHandler(async(req,res) =>{
 
 export {getAllVideos,
     publishAVideo,
+    getMyVideos,
     getVideoById,
     updateVideo,
     deleteVideo,
