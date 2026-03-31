@@ -4,50 +4,55 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Like } from "../models/like.model.js";
 import { Comment } from "../models/comment.model.js";
+import { Video } from "../models/video.model.js";
 
+const toggleVideoLike = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+  const userId = req.user?._id;
 
+  if (!videoId) {
+    throw new ApiError(400, "videoId is missing");
+  }
 
-const toggleVideoLike = asyncHandler(async(req,res) =>{
-// Extract videoId from req.params and userId from req.user.
-// Validate that videoId exists.
-// Check Like collection for { likedBy: userId, video: videoId }.
-// If document exists → delete it (unlike video).
-// If document does not exist → create a new like document.
-// Return success response.
+  if (!mongoose.Types.ObjectId.isValid(videoId)) {
+    throw new ApiError(400, "Invalid videoId");
+  }
 
-    const {videoId} = req.params
-    const userId = req.user?._id
+  const existingVideoLike = await Like.findOne({
+    likedBy: userId,
+    video: videoId,
+  });
 
-    if(!videoId){
-        throw new ApiError(400,"videoId is missing")
-    }
+  let message = "";
 
-    if (!mongoose.Types.ObjectId.isValid(videoId)) {
-        throw new ApiError(400, "Invalid videoId");
-    }
+  if (existingVideoLike) {
+    await Like.findByIdAndDelete(existingVideoLike._id);
+    message = "Video unliked successfully";
+  } else {
+    await Like.create({
+      likedBy: userId,
+      video: videoId,
+    });
+    message = "Video liked successfully";
+  }
 
-    const existingVideoLike = await Like.findOne({
-        likedBy :userId,
-        video :videoId
-    })
+  const likesCount = await Like.countDocuments({
+    video: videoId,
+  });
 
-    if(existingVideoLike){
-        await Like.findByIdAndDelete(existingVideoLike._id)
-        return res.status(200)
-        .json(new ApiResponse(200,{},"Video Unliked successfully"))
-    }
+  await Video.findByIdAndUpdate(videoId, {
+    likesCount,
+  });
 
-    const Videolike = await Like.create({
-        likedBy:userId,
-        video:videoId
-    })
-
-     return res.status(200)
-     .json(
-        new ApiResponse(200, Videolike, "Video liked successfully")
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      { likesCount }, 
+      message
     )
+  );
+});
 
-})
 
 
 const toggleCommentLike = asyncHandler(async(req,res) =>{
