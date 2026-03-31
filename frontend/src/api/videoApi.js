@@ -6,6 +6,10 @@ const API = axios.create({
 });
 
 export const getAllVideos = async () => {
-  const res = await API.get("/videos");
+  const res = await API.get("/videos", {
+  headers: {
+    "Cache-Control": "no-cache",
+  },
+});
   return res.data;
 };

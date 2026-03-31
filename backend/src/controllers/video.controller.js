@@ -270,7 +270,8 @@ const publishAVideo = asyncHandler(async(req,res) =>{
         title,
         description,
         duration:videoUpload?.duration||0,
-        owner:req.user._id
+        owner:req.user._id,
+        isPublished: true
     })
 
       return res.status(201).json(

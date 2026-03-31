@@ -1,7 +1,5 @@
 // require('dotenv').config({path:'./env'})
 import dotenv from "dotenv";
-
-// In ES Modules, dotenv must be executed before other imports
 dotenv.config();
 import app from "./app.js";
 

@@ -24,16 +24,27 @@ const Navbar = () => {
 
       {/* Right Side */}
       <div className="flex items-center gap-4">
+
         <span className="text-gray-300 hidden sm:block">
           {user?.fullName}
         </span>
 
+        {/* 🔥 Upload Button */}
+        <button
+          onClick={() => navigate("/upload")}
+          className="bg-white text-black px-4 py-1 rounded-lg hover:bg-gray-200 transition"
+        >
+          Upload
+        </button>
+
+        {/* Logout */}
         <button
           onClick={handleLogout}
-          className="bg-white text-black px-4 py-1 rounded-lg hover:bg-gray-200 transition"
+          className="bg-red-500 px-4 py-1 rounded-lg hover:bg-red-600 transition"
         >
           Logout
         </button>
+
       </div>
     </div>
   );

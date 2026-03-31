@@ -6,8 +6,14 @@ import { useVideos } from "../../hooks/useVideos.js";
 const Home = () => {
   const { data, isLoading, isError } = useVideos();
 
-  // ✅ FIXED
-  const videos = data?.data?.videos || [];
+console.log("FULL:", data);
+console.log("INNER:", data?.data);
+
+const videos =
+  data?.data?.docs ||
+  data?.data?.videos ||
+  data?.data ||
+  [];
 
   return (
     <div className="min-h-screen bg-black text-white">
