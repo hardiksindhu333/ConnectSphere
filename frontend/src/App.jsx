@@ -6,6 +6,9 @@ import Home from "./pages/Home/Home.jsx";
 import VideoPlayer from "./pages/VideoPlayer.jsx";
 import Profile from "./pages/Profile.jsx";
 
+//  IMPORT UPLOAD
+import UploadVideo from "./pages/Upload/UploadVideo.jsx";
+
 import Navbar from "./components/Navbar.jsx";
 import Sidebar from "./components/Sidebar.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
@@ -21,20 +24,15 @@ const Layout = ({ children }) => {
 
   return (
     <div className="bg-black text-white min-h-screen">
-
       <Navbar />
 
       <div className="flex">
-
-        {/* ✅ CONDITIONAL SIDEBAR */}
         {!shouldHideSidebar && <Sidebar />}
 
         <div className="flex-1">
           {children}
         </div>
-
       </div>
-
     </div>
   );
 };
@@ -44,10 +42,11 @@ function App() {
     <BrowserRouter>
       <Routes>
 
+        {/* AUTH */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
-        {/* 🔥 WRAPPED ROUTES */}
+        {/* HOME */}
         <Route
           path="/"
           element={
@@ -59,6 +58,7 @@ function App() {
           }
         />
 
+        {/* VIDEO PLAYER */}
         <Route
           path="/video/:id"
           element={
@@ -70,12 +70,25 @@ function App() {
           }
         />
 
+        {/* PROFILE */}
         <Route
           path="/profile"
           element={
             <ProtectedRoute>
               <Layout>
                 <Profile />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/*  UPLOAD ROUTE (FIXED) */}
+        <Route
+          path="/upload"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <UploadVideo />
               </Layout>
             </ProtectedRoute>
           }

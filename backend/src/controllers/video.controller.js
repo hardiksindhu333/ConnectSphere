@@ -400,82 +400,96 @@ const getVideoById = asyncHandler(async(req,res)=>{
 
 })
 
+const updateVideo = asyncHandler(async (req, res) => {
+    const { videoId } = req.params;
+    const { title, description, removeThumbnail } = req.body;
 
-const updateVideo = asyncHandler(async(req,res)=>{
-// Algorithm
-// Get videoId from params.
-// Validate ObjectId.
-// Find video in DB.
-// Check if video exists.
-// Check if current user is owner.
-// Get updated title, description.
-// If new thumbnail uploaded:
-// upload to Cloudinary
-// delete old thumbnail.
-// Update video fields.
-// Save video.
-// Return updated video.
-
-    const {videoId} = req.params
-    const {title,description} = req.body
-
-    if( !mongoose.Types.ObjectId.isValid(videoId)){
-        throw new ApiError(400,"video id invalid while updating details")
+    if (!mongoose.Types.ObjectId.isValid(videoId)) {
+        throw new ApiError(400, "Invalid video id");
     }
 
-    const video = await Video.findById(videoId)
+    const video = await Video.findById(videoId);
 
-    if(!video){
-        throw new ApiError(404,"video not found while updating details")
+    if (!video) {
+        throw new ApiError(404, "Video not found");
     }
 
-    if(video.owner.toString() !== req.user._id.toString()){
-        throw new ApiError(403,"you are not allowed to update this video")
+    if (video.owner.toString() !== req.user._id.toString()) {
+        throw new ApiError(403, "Not allowed");
     }
 
-    if(!title && !description && !req.file){
-        throw new ApiError(400,"at least one field must be updated")
-    }
 
-    if(title){
-        video.title = title
-    }
+    if (title) video.title = title;
+    if (description) video.description = description;
 
-    if(description){
-        video.description = description
-    }
 
-    const thumbnailLocalPath = req.file?.path
-    
-    if(thumbnailLocalPath){
-        const uploadedThumbnail = await uploadOnCloudinary(thumbnailLocalPath)
+    const videoFileLocalPath = req.files?.videoFile?.[0]?.path;
 
-        if(!uploadedThumbnail){
-            throw new ApiError(500,"thumbnail uplaod failed")
+    if (videoFileLocalPath) {
+        const uploadedVideo = await uploadOnCloudinary(videoFileLocalPath);
+
+        if (!uploadedVideo) {
+            throw new ApiError(500, "Video upload failed");
         }
 
-        if(video.thumbnail?.public_id){
-            await deleteFromCloudinary(video.thumbnail.public_id)
+        // delete old video
+        if (video.videoFile?.public_id) {
+            await deleteFromCloudinary(video.videoFile.public_id, "video");
+        }
+
+        video.videoFile = {
+            url: uploadedVideo.secure_url,
+            public_id: uploadedVideo.public_id,
+        };
+
+        video.duration = uploadedVideo?.duration || video.duration;
+    }
+
+
+    if (removeThumbnail === "true") {
+        if (video.thumbnail?.public_id) {
+            await deleteFromCloudinary(video.thumbnail.public_id, "image");
+        }
+        video.thumbnail = null;
+    }
+
+
+    const thumbnailLocalPath = req.files?.thumbnail?.[0]?.path;
+
+    if (thumbnailLocalPath) {
+        const uploadedThumbnail = await uploadOnCloudinary(thumbnailLocalPath);
+
+        if (!uploadedThumbnail) {
+            throw new ApiError(500, "Thumbnail upload failed");
+        }
+
+        // delete old if exists
+        if (video.thumbnail?.public_id) {
+            await deleteFromCloudinary(video.thumbnail.public_id, "image");
         }
 
         video.thumbnail = {
             url: uploadedThumbnail.secure_url,
-            public_id: uploadedThumbnail.public_id
-        }
+            public_id: uploadedThumbnail.public_id,
+        };
     }
 
-    await video.save()
+    if (
+        !title &&
+        !description &&
+        !videoFileLocalPath &&
+        !thumbnailLocalPath &&
+        removeThumbnail !== "true"
+    ) {
+        throw new ApiError(400, "No fields provided to update");
+    }
 
-     return res.status(200).json(
-        new ApiResponse(
-            200,
-            video,
-            "Video updated successfully"
-        )
-    )
+    await video.save();
 
-
-})
+    return res.status(200).json(
+        new ApiResponse(200, video, "Video updated successfully")
+    );
+});
 
 
 const deleteVideo = asyncHandler(async(req,res) =>{

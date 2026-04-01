@@ -1,9 +1,28 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getMyProfile, getMyVideos } from "../api/user";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import axios from "axios";
+
+const API = axios.create({
+  baseURL: "http://localhost:3000/api/v1",
+  withCredentials: true,
+});
 
 const Profile = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const [editingVideo, setEditingVideo] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
+  const [removeThumbnail, setRemoveThumbnail] = useState(false);
+
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    thumbnail: null,
+    videoFile: null, // ✅ NEW
+  });
 
   const { data: user } = useQuery({
     queryKey: ["profile"],
@@ -15,61 +34,185 @@ const Profile = () => {
     queryFn: getMyVideos,
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }) => {
+      const form = new FormData();
+
+      form.append("title", data.title);
+      form.append("description", data.description);
+
+      if (data.thumbnail instanceof File) {
+        form.append("thumbnail", data.thumbnail);
+      }
+
+      if (data.videoFile instanceof File) {
+        form.append("videoFile", data.videoFile);
+      }
+
+      if (removeThumbnail) {
+        form.append("removeThumbnail", "true");
+      }
+
+      return await API.patch(`/videos/${id}`, form);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["myVideos"]);
+      setEditingVideo(null);
+      setRemoveThumbnail(false);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => API.delete(`/videos/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["myVideos"]);
+      setDeleteId(null);
+    },
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: async (id) =>
+      API.patch(`/videos/${id}/toggle-publish`),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["myVideos"]);
+    },
+  });
+
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 max-w-6xl mx-auto text-white">
 
       {/* PROFILE */}
       <div className="flex items-center gap-6 mb-10">
-        <img
-          src={user?.avatar}
-          className="w-24 h-24 rounded-full border"
-        />
-
+        <img src={user?.avatar} className="w-24 h-24 rounded-full" />
         <div>
-          <h1 className="text-3xl font-bold">
-            {user?.username}
-          </h1>
-          <p className="text-gray-400">
-            {user?.email}
-          </p>
+          <h1 className="text-3xl font-bold">{user?.username}</h1>
+          <p className="text-gray-400">{user?.email}</p>
         </div>
       </div>
 
       {/* VIDEOS */}
-      <h2 className="text-xl font-semibold mb-4">
-        Your Videos
-      </h2>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-
-        {videos.length === 0 && (
-          <p className="text-gray-400">No videos uploaded</p>
-        )}
-
+      <div className="grid grid-cols-3 gap-6">
         {videos.map((video) => (
-          <div
-            key={video._id}
-            onClick={() => navigate(`/video/${video._id}`)}
-            className="cursor-pointer bg-white/5 rounded-lg overflow-hidden hover:scale-105 transition"
-          >
+          <div key={video._id} className="relative group">
             <img
               src={video.thumbnail?.url}
-              className="w-full h-48 object-cover"
+              className="w-full h-40 object-cover"
             />
 
-            <div className="p-3">
-              <h3 className="font-semibold">
-                {video.title}
-              </h3>
+            <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 flex flex-col justify-center items-center gap-2">
+              
+              <button
+                onClick={() => {
+                  setEditingVideo(video);
+                  setFormData({
+                    title: video.title,
+                    description: video.description,
+                    thumbnail: null,
+                    videoFile: null,
+                  });
+                }}
+                className="bg-blue-600 px-3 py-1 rounded"
+              >
+                Edit
+              </button>
 
-              <p className="text-sm text-gray-400">
-                {video.views || 0} views
-              </p>
+              <button
+                onClick={() => setDeleteId(video._id)}
+                className="bg-red-600 px-3 py-1 rounded"
+              >
+                Delete
+              </button>
+
+              <button
+                onClick={() => toggleMutation.mutate(video._id)}
+                className={`px-3 py-1 rounded ${
+                  video.isPublished ? "bg-green-600" : "bg-gray-600"
+                }`}
+              >
+                {video.isPublished ? "Published" : "Unpublished"}
+              </button>
             </div>
           </div>
         ))}
-
       </div>
+
+      {/* EDIT MODAL */}
+      {editingVideo && (
+        <div className="fixed inset-0 bg-black/70 flex justify-center items-center">
+          <div className="bg-gray-900 p-6 rounded w-96">
+
+            <h2>Edit Video</h2>
+
+            {/* CURRENT THUMBNAIL */}
+            {!removeThumbnail && editingVideo.thumbnail?.url && (
+              <img
+                src={editingVideo.thumbnail.url}
+                className="w-full h-40 mb-3"
+              />
+            )}
+
+            <button
+              onClick={() => setRemoveThumbnail(true)}
+              className="text-red-400 text-sm"
+            >
+              Remove Thumbnail
+            </button>
+
+            <input
+              value={formData.title}
+              onChange={(e) =>
+                setFormData({ ...formData, title: e.target.value })
+              }
+              className="w-full mt-3 p-2 bg-gray-800"
+            />
+
+            <textarea
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+              className="w-full mt-3 p-2 bg-gray-800"
+            />
+
+            {/*  VIDEO UPDATE */}
+            <input
+              type="file"
+              accept="video/*"
+              onChange={(e) =>
+                setFormData({ ...formData, videoFile: e.target.files[0] })
+              }
+              className="mt-3"
+            />
+
+            {/*  THUMBNAIL */}
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                setFormData({
+                  ...formData,
+                  thumbnail: e.target.files[0],
+                });
+                setRemoveThumbnail(false);
+              }}
+              className="mt-3"
+            />
+
+            <button
+              onClick={() =>
+                updateMutation.mutate({
+                  id: editingVideo._id,
+                  data: formData,
+                })
+              }
+              className="bg-blue-600 mt-4 px-3 py-1 rounded"
+            >
+              Save
+            </button>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

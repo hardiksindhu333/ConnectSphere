@@ -35,7 +35,10 @@ router.post(
 router.patch(
     "/:videoId",
     verifyJWT,
-    upload.single("thumbnail"),
+    upload.fields([
+        { name: "videoFile", maxCount: 1 },   //  NEW
+        { name: "thumbnail", maxCount: 1 }    // existing
+    ]),
     updateVideo
 );
 
