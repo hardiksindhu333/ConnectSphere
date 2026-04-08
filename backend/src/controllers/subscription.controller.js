@@ -7,45 +7,36 @@ import { User } from "../models/user.model.js";
 
 
 
-const toggleSubscription = asyncHandler(async(req,res) =>{
-// Extract channelId from req.params and userId from req.user.
-// Validate that channelId exists.
-// Check in Subscription collection if { subscriber: userId, channel: channelId } exists.
-// If it exists → delete the subscription (unsubscribe).
-// If it does not exist → create a new subscription document (subscribe).
-// Return success response.
+const toggleSubscription = asyncHandler(async (req, res) => {
+    const { channelId } = req.params;
+    const userId = req.user?._id;
 
-    const {channelId} = req.params
-    const userId = req.user?._id
-
-    if(!channelId){
-        throw new ApiError(400,"channelId is missing")
+    if (!channelId) {
+        throw new ApiError(400, "channelId is missing");
     }
 
-    const existingSubscription = await Subscription.findOne({
-        subscriber:userId,
-        channel:channelId
-    })
+    const existing = await Subscription.findOne({
+        subscriber: userId,
+        channel: channelId
+    });
 
-    if(existingSubscription){
-        await Subscription.findByIdAndDelete(existingSubscription._id)
+    if (existing) {
+        await Subscription.findByIdAndDelete(existing._id);
+
         return res.status(200).json(
-            new ApiResponse(200, {}, "Unsubscribed successfully")
-    )
+            new ApiResponse(200, { isSubscribed: false }, "Unsubscribed")
+        );
     }
 
-    const subscription = await Subscription.create({
-        subscriber:userId,
-        channel:channelId
-    })
+    await Subscription.create({
+        subscriber: userId,
+        channel: channelId
+    });
 
     return res.status(200).json(
-        new ApiResponse(200,{},"subscribed successfully")
-    )
-
-    
-
-})
+        new ApiResponse(200, { isSubscribed: true }, "Subscribed")
+    );
+});
 
 
 
