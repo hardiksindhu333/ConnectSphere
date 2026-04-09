@@ -1,9 +1,11 @@
-import { motion } from "framer-motion";
+import { motion as Motion } from "framer-motion";
 import { useState } from "react";
 import { useLogin } from "../../hooks/useLogin.js"; // ✅ IMPORTANT
+import { useNavigate } from "react-router-dom";
 
 function Login() {
   const { mutate, isPending } = useLogin(); // ✅ connect API
+  const navigate = useNavigate();
 
   const [form, setForm] = useState({
     email: "",
@@ -24,7 +26,7 @@ function Login() {
       <div className="absolute w-[400px] h-[400px] bg-purple-600 opacity-20 blur-[120px] bottom-[-100px] right-[-100px]"></div>
 
       {/* Card */}
-      <motion.div
+      <Motion.div
         initial={{ opacity: 0, scale: 0.95, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.5 }}
@@ -89,11 +91,14 @@ function Login() {
         {/* Footer */}
         <p className="text-center text-gray-400 text-sm">
           Don't have an account?{" "}
-          <span className="text-white hover:underline cursor-pointer">
+          <span
+            onClick={() => navigate("/signup")}
+            className="text-white hover:underline cursor-pointer"
+          >
             Sign up
           </span>
         </p>
-      </motion.div>
+      </Motion.div>
     </div>
   );
 }

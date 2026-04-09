@@ -1,11 +1,7 @@
-import axios from "axios";
+import API from "./axios.js";
 
 export const toggleLike = async (videoId) => {
-  const res = await axios.post(
-    `http://localhost:3000/api/v1/likes/video/${videoId}`,
-    {},
-    { withCredentials: true }
-  );
+  const res = await API.post(`/likes/video/${videoId}`, {});
 
   return res.data;
 };

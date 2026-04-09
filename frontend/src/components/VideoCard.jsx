@@ -1,7 +1,10 @@
 import { useNavigate } from "react-router-dom";
+import { resolveMediaUrl } from "../utils/resolveMediaUrl.js";
 
 const VideoCard = ({ video }) => {
   const navigate = useNavigate();
+
+  const thumbnailUrl = resolveMediaUrl(video?.thumbnail?.url);
 
   return (
     <div
@@ -9,11 +12,16 @@ const VideoCard = ({ video }) => {
       onClick={() => navigate(`/video/${video._id}`)}
     >
       {/* Thumbnail */}
-      <img
-        src={video.thumbnail?.url}
-        alt="thumbnail"
-        className="w-full h-48 object-cover rounded-lg"
-      />
+      {thumbnailUrl ? (
+        <img
+          src={thumbnailUrl}
+          alt="thumbnail"
+          className="w-full h-48 object-cover rounded-lg"
+          loading="lazy"
+        />
+      ) : (
+        <div className="w-full h-48 rounded-lg bg-white/10" />
+      )}
 
       <h3 className="mt-2 font-semibold">
         {video.title}

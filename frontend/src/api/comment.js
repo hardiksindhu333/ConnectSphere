@@ -1,41 +1,28 @@
-import axios from "axios";
-
-const BASE_URL = "http://localhost:3000/api/v1/comments";
+import API from "./axios.js";
 
 // ✅ GET COMMENTS
 export const getComments = async (videoId) => {
-  const res = await axios.get(
-    `${BASE_URL}/video/${videoId}`,
-    { withCredentials: true }
-  );
+  const res = await API.get(`/comments/video/${videoId}`);
   return res.data.data;
 };
 
 // ✅ ADD COMMENT / REPLY (🔥 FIXED)
 export const addComment = async ({ videoId, content, parentComment = null }) => {
-  const res = await axios.post(
-    `${BASE_URL}/video/${videoId}`,
-    { content, parentComment }, // 🔥 IMPORTANT
-    { withCredentials: true }
-  );
+  const res = await API.post(`/comments/video/${videoId}`, {
+    content,
+    parentComment,
+  });
   return res.data.data;
 };
 
 // ✏️ UPDATE COMMENT
 export const updateComment = async ({ commentId, content }) => {
-  const res = await axios.patch(
-    `${BASE_URL}/${commentId}`,
-    { content },
-    { withCredentials: true }
-  );
+  const res = await API.patch(`/comments/${commentId}`, { content });
   return res.data.data;
 };
 
 // ❌ DELETE COMMENT
 export const deleteComment = async (commentId) => {
-  const res = await axios.delete(
-    `${BASE_URL}/${commentId}`,
-    { withCredentials: true }
-  );
+  const res = await API.delete(`/comments/${commentId}`);
   return res.data.data;
 };

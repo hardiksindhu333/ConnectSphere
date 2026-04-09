@@ -2,19 +2,27 @@ import { create } from "zustand";
 
 const useAuthStore = create((set) => ({
   user: null,
-  isAuthenticated: false,
+  status: "unknown", // 'unknown' | 'authenticated' | 'unauthenticated'
 
   login: (userData) =>
     set({
       user: userData,
-      isAuthenticated: true,
+      status: "authenticated",
     }),
 
   logout: () =>
     set({
       user: null,
-      isAuthenticated: false,
+      status: "unauthenticated",
     }),
+
+  setUser: (userData) =>
+    set({
+      user: userData,
+      status: userData ? "authenticated" : "unauthenticated",
+    }),
+
+  setStatus: (status) => set({ status }),
 }));
 
 export default useAuthStore;

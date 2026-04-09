@@ -5,8 +5,8 @@ export const useVideos = () => {
   return useQuery({
     queryKey: ["videos"],
     queryFn: getAllVideos,
-    staleTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    staleTime: 15_000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 };

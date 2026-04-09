@@ -1,15 +1,24 @@
 import useAuthStore from "../store/authStore.js";
 import { useNavigate } from "react-router-dom";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { logoutUser } from "../api/authApi.js";
+import toast from "react-hot-toast";
 
 const Navbar = () => {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
+  const logoutMutation = useMutation({
+    mutationFn: logoutUser,
+    onSuccess: () => {
+      logout();
+      queryClient.clear();
+      toast.success("Logged out");
+      navigate("/login");
+    },
+  });
 
   return (
     <div className="flex justify-between items-center px-6 py-4 border-b border-white/10 bg-black sticky top-0 z-50">
@@ -40,7 +49,7 @@ const Navbar = () => {
        
 
         <button
-          onClick={handleLogout}
+          onClick={() => logoutMutation.mutate()}
           className="bg-red-500 px-4 py-1 rounded-lg"
         >
           Logout

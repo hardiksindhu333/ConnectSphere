@@ -1,8 +1,8 @@
 import { useState } from "react";
-import axios from "axios";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
+import API from "../../api/axios.js";
 
 const UploadVideo = () => {
   const [form, setForm] = useState({
@@ -31,13 +31,9 @@ const UploadVideo = () => {
     formData.append("videoFile", videoFile);
     formData.append("thumbnail", thumbnail);
 
-    await axios.post(
-      "http://localhost:3000/api/v1/videos/publish",
-      formData,
-      {
-        withCredentials: true,
-      }
-    );
+    await API.post("/videos/publish", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
 
     toast.success("Video uploaded 🚀");
 

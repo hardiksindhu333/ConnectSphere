@@ -1,6 +1,5 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import axios from "axios";
 import { useState } from "react";
 
 import { toggleLike } from "../api/like";
@@ -12,28 +11,15 @@ import {
 } from "../api/comment";
 
 import useAuthStore from "../store/authStore";
-
-const API = axios.create({
-  baseURL: "http://localhost:3000/api/v1",
-  withCredentials: true,
-});
-
-// 🎥 VIDEO
-const getVideoById = async (id) => {
-  const res = await API.get(`/videos/${id}`);
-  return res.data.data;
-};
-
-// 📺 FEED
-const getFeed = async () => {
-  const res = await API.get(`/videos/feed`);
-  return res.data.data;
-};
+import API from "../api/axios.js";
+import { getFeedVideos, getVideoById as getVideoApiById } from "../api/videoApi.js";
+import { resolveMediaUrl } from "../utils/resolveMediaUrl.js";
+import { useNavigate } from "react-router-dom";
 
 const VideoPlayer = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { user } = useAuthStore();
 
@@ -44,15 +30,33 @@ const VideoPlayer = () => {
   const [replyingTo, setReplyingTo] = useState(null);
 
   // 🎥 VIDEO
-  const { data: video, isLoading } = useQuery({
+  const {
+    data: video,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ["video", id],
-    queryFn: () => getVideoById(id),
+    enabled: !!id,
+    queryFn: async () => {
+      // `getVideoApiById` returns the response JSON body (ApiResponse),
+      // so the actual payload is at `res.data` (not `res.data.data`).
+      const res = await getVideoApiById(id);
+      const value = res?.data ?? null;
+      // React Query: queryFn MUST NOT return undefined
+      if (value === null) throw new Error("Video not found");
+      return value;
+    },
   });
 
   // 📺 FEED
   const { data: feed = [] } = useQuery({
     queryKey: ["feed"],
-    queryFn: getFeed,
+    queryFn: async () => {
+      const res = await getFeedVideos();
+      // ApiResponse: videos array is at `res.data`
+      return res?.data || [];
+    },
   });
 
   // ❤️ LIKE
@@ -114,25 +118,41 @@ const VideoPlayer = () => {
     },
   });
 
-  if (isLoading) {
-    return <div className="text-white p-6">Loading...</div>;
+  if (isLoading) return <div className="text-white p-6">Loading...</div>;
+  if (isError) {
+    return (
+      <div className="text-white p-6">
+        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
+          {error?.message || "Failed to load video"}
+        </div>
+      </div>
+    );
   }
+
+  const videoSrc = resolveMediaUrl(video?.videoFile?.url);
 
   return (
     <div className="min-h-screen bg-black text-white p-6">
-      <div className="flex gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-8">
 
         {/* LEFT SIDE */}
-        <div className="flex-1 max-w-4xl">
+        <div className="min-w-0">
 
           {/* VIDEO */}
           <div className="aspect-video bg-black rounded overflow-hidden">
-            <video
-              src={video?.videoFile?.url}
-              controls
-              autoPlay
-              className="w-full h-full"
-            />
+            {videoSrc ? (
+              <video
+                src={videoSrc}
+                controls
+                autoPlay
+                playsInline
+                className="w-full h-full"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-400">
+                Video source missing
+              </div>
+            )}
           </div>
 
           {/* TITLE */}
@@ -336,6 +356,43 @@ const VideoPlayer = () => {
           </div>
 
         </div>
+
+        {/* RIGHT SIDE: RELATED */}
+        <aside className="hidden lg:block">
+          <h2 className="text-sm font-semibold text-gray-200 mb-3">
+            Related
+          </h2>
+          <div className="space-y-3">
+            {feed
+              .filter((v) => v?._id && v._id !== id)
+              .slice(0, 12)
+              .map((v) => (
+                <button
+                  key={v._id}
+                  onClick={() => navigate(`/video/${v._id}`)}
+                  className="w-full text-left flex gap-3 p-2 rounded-lg hover:bg-white/5 transition"
+                >
+                  <div className="w-40 aspect-video bg-white/10 rounded overflow-hidden flex-shrink-0">
+                    {resolveMediaUrl(v.thumbnail?.url) ? (
+                      <img
+                        src={resolveMediaUrl(v.thumbnail?.url)}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : null}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium line-clamp-2">
+                      {v.title}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      {v.owner?.username || "Channel"}
+                    </div>
+                  </div>
+                </button>
+              ))}
+          </div>
+        </aside>
 
       </div>
     </div>

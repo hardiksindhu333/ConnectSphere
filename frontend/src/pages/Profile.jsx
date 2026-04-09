@@ -1,20 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getMyProfile, getMyVideos } from "../api/user";
-import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import axios from "axios";
-
-const API = axios.create({
-  baseURL: "http://localhost:3000/api/v1",
-  withCredentials: true,
-});
+import API from "../api/axios.js";
+import { resolveMediaUrl } from "../utils/resolveMediaUrl.js";
 
 const Profile = () => {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [editingVideo, setEditingVideo] = useState(null);
-  const [deleteId, setDeleteId] = useState(null);
   const [removeThumbnail, setRemoveThumbnail] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -66,7 +59,6 @@ const Profile = () => {
     mutationFn: async (id) => API.delete(`/videos/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries(["myVideos"]);
-      setDeleteId(null);
     },
   });
 
@@ -83,7 +75,14 @@ const Profile = () => {
 
       {/* PROFILE */}
       <div className="flex items-center gap-6 mb-10">
-        <img src={user?.avatar} className="w-24 h-24 rounded-full" />
+        {resolveMediaUrl(user?.avatar?.url || user?.avatar) ? (
+          <img
+            src={resolveMediaUrl(user?.avatar?.url || user?.avatar)}
+            className="w-24 h-24 rounded-full object-cover"
+          />
+        ) : (
+          <div className="w-24 h-24 rounded-full bg-white/10" />
+        )}
         <div>
           <h1 className="text-3xl font-bold">{user?.username}</h1>
           <p className="text-gray-400">{user?.email}</p>
@@ -91,13 +90,17 @@ const Profile = () => {
       </div>
 
       {/* VIDEOS */}
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {videos.map((video) => (
           <div key={video._id} className="relative group">
-            <img
-              src={video.thumbnail?.url}
-              className="w-full h-40 object-cover"
-            />
+            {resolveMediaUrl(video.thumbnail?.url) ? (
+              <img
+                src={resolveMediaUrl(video.thumbnail?.url)}
+                className="w-full h-40 object-cover"
+              />
+            ) : (
+              <div className="w-full h-40 bg-white/10" />
+            )}
 
             <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 flex flex-col justify-center items-center gap-2">
               
@@ -117,7 +120,10 @@ const Profile = () => {
               </button>
 
               <button
-                onClick={() => setDeleteId(video._id)}
+                onClick={() => {
+                  const ok = window.confirm("Delete this video?");
+                  if (ok) deleteMutation.mutate(video._id);
+                }}
                 className="bg-red-600 px-3 py-1 rounded"
               >
                 Delete
@@ -146,7 +152,7 @@ const Profile = () => {
             {/* CURRENT THUMBNAIL */}
             {!removeThumbnail && editingVideo.thumbnail?.url && (
               <img
-                src={editingVideo.thumbnail.url}
+                src={resolveMediaUrl(editingVideo.thumbnail.url)}
                 className="w-full h-40 mb-3"
               />
             )}
