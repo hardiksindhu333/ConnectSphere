@@ -29,19 +29,19 @@ const likeSchema = new Schema(
 // ✅ video like unique
 likeSchema.index(
   { likedBy: 1, video: 1 },
-  { unique: true, partialFilterExpression: { video: { $exists: true } } }
+  { unique: true, partialFilterExpression: { video: { $type: "objectId" } } }
 );
 
 // ✅ comment like unique
 likeSchema.index(
   { likedBy: 1, comment: 1 },
-  { unique: true, partialFilterExpression: { comment: { $exists: true } } }
+  { unique: true, partialFilterExpression: { comment: { $type: "objectId" } } }
 );
 
 // ✅ tweet like unique
 likeSchema.index(
   { likedBy: 1, tweet: 1 },
-  { unique: true, partialFilterExpression: { tweet: { $exists: true } } }
+  { unique: true, partialFilterExpression: { tweet: { $type: "objectId" } } }
 );
 
 export const Like = mongoose.model("Like", likeSchema);

@@ -14,13 +14,13 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 const router = Router();
 
-router.get("/feed", getVideoFeed);
+ router.get("/feed", verifyJWT, getVideoFeed);
 
 router.get("/my-videos", verifyJWT, getMyVideos);
 
-router.get("/", getAllVideos);
+ router.get("/", verifyJWT, getAllVideos);
 
-router.get("/:videoId", getVideoById);
+ router.get("/:videoId", verifyJWT, getVideoById);
 
 router.post(
     "/publish",

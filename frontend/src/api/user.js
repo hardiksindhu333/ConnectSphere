@@ -9,3 +9,8 @@ export const getMyVideos = async () => {
   const res = await API.get("/videos/my-videos");
   return res.data.data;
 };
+
+export const getWatchHistory = async () => {
+  const res = await API.get("/users/history");
+  return res.data;
+};

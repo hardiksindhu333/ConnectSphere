@@ -362,6 +362,28 @@ const getVideoById = asyncHandler(async (req, res) => {
         $inc: { views: 1 }
     });
 
+    // WATCH HISTORY (YouTube-like: most recent first, de-duped, capped)
+    if (req.user?._id) {
+        await User.updateOne(
+            { _id: req.user._id },
+            {
+                $pull: { watchHistory: videoObjectId },
+            }
+        );
+        await User.updateOne(
+            { _id: req.user._id },
+            {
+                $push: {
+                    watchHistory: {
+                        $each: [videoObjectId],
+                        $position: 0,
+                        $slice: 200
+                    }
+                }
+            }
+        );
+    }
+
     return res.status(200).json(
         new ApiResponse(
             200,

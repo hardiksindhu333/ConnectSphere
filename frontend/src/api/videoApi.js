@@ -1,11 +1,12 @@
 import API from "./axios.js";
 
-export const getAllVideos = async () => {
+export const getAllVideos = async ({ query } = {}) => {
   const res = await API.get("/videos", {
-  headers: {
-    "Cache-Control": "no-cache",
-  },
-});
+    params: query ? { query } : undefined,
+    headers: {
+      "Cache-Control": "no-cache",
+    },
+  });
   return res.data;
 };
 

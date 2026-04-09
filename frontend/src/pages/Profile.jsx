@@ -3,6 +3,8 @@ import { getMyProfile, getMyVideos } from "../api/user";
 import { useState } from "react";
 import API from "../api/axios.js";
 import { resolveMediaUrl } from "../utils/resolveMediaUrl.js";
+import toast from "react-hot-toast";
+import { Pencil, Trash2, Eye, EyeOff } from "lucide-react";
 
 const Profile = () => {
   const queryClient = useQueryClient();
@@ -49,6 +51,7 @@ const Profile = () => {
       return await API.patch(`/videos/${id}`, form);
     },
     onSuccess: () => {
+      toast.success("Video updated");
       queryClient.invalidateQueries(["myVideos"]);
       setEditingVideo(null);
       setRemoveThumbnail(false);
@@ -58,6 +61,7 @@ const Profile = () => {
   const deleteMutation = useMutation({
     mutationFn: async (id) => API.delete(`/videos/${id}`),
     onSuccess: () => {
+      toast.success("Video deleted");
       queryClient.invalidateQueries(["myVideos"]);
     },
   });
@@ -66,6 +70,7 @@ const Profile = () => {
     mutationFn: async (id) =>
       API.patch(`/videos/${id}/toggle-publish`),
     onSuccess: () => {
+      toast.success("Publish status updated");
       queryClient.invalidateQueries(["myVideos"]);
     },
   });
@@ -92,18 +97,55 @@ const Profile = () => {
       {/* VIDEOS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {videos.map((video) => (
-          <div key={video._id} className="relative group">
+          <div
+            key={video._id}
+            className="relative group rounded-2xl overflow-hidden bg-white/5 border border-white/10"
+          >
             {resolveMediaUrl(video.thumbnail?.url) ? (
               <img
                 src={resolveMediaUrl(video.thumbnail?.url)}
-                className="w-full h-40 object-cover"
+                className="w-full h-44 object-cover"
               />
             ) : (
-              <div className="w-full h-40 bg-white/10" />
+              <div className="w-full h-44 bg-white/10" />
             )}
 
-            <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 flex flex-col justify-center items-center gap-2">
-              
+            <div className="p-4">
+              <div className="font-semibold line-clamp-1">{video.title}</div>
+              <div className="text-xs text-gray-400 line-clamp-2 mt-1">
+                {video.description}
+              </div>
+
+              <div className="mt-3 flex items-center justify-between">
+                <div
+                  className={[
+                    "text-xs px-2 py-1 rounded-full border",
+                    video.isPublished
+                      ? "bg-green-500/10 text-green-200 border-green-500/20"
+                      : "bg-gray-500/10 text-gray-300 border-white/10",
+                  ].join(" ")}
+                >
+                  {video.isPublished ? "Published" : "Unpublished"}
+                </div>
+
+                <button
+                  onClick={() => toggleMutation.mutate(video._id)}
+                  className="text-xs px-3 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10"
+                >
+                  {video.isPublished ? (
+                    <span className="inline-flex items-center gap-2">
+                      <EyeOff size={14} /> Unpublish
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-2">
+                      <Eye size={14} /> Publish
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition flex gap-2">
               <button
                 onClick={() => {
                   setEditingVideo(video);
@@ -114,9 +156,9 @@ const Profile = () => {
                     videoFile: null,
                   });
                 }}
-                className="bg-blue-600 px-3 py-1 rounded"
+                className="p-2 rounded-full bg-black/60 hover:bg-black/80 border border-white/10"
               >
-                Edit
+                <Pencil size={16} />
               </button>
 
               <button
@@ -124,18 +166,9 @@ const Profile = () => {
                   const ok = window.confirm("Delete this video?");
                   if (ok) deleteMutation.mutate(video._id);
                 }}
-                className="bg-red-600 px-3 py-1 rounded"
+                className="p-2 rounded-full bg-black/60 hover:bg-red-500/30 border border-white/10"
               >
-                Delete
-              </button>
-
-              <button
-                onClick={() => toggleMutation.mutate(video._id)}
-                className={`px-3 py-1 rounded ${
-                  video.isPublished ? "bg-green-600" : "bg-gray-600"
-                }`}
-              >
-                {video.isPublished ? "Published" : "Unpublished"}
+                <Trash2 size={16} className="text-red-200" />
               </button>
             </div>
           </div>
@@ -145,21 +178,32 @@ const Profile = () => {
       {/* EDIT MODAL */}
       {editingVideo && (
         <div className="fixed inset-0 bg-black/70 flex justify-center items-center">
-          <div className="bg-gray-900 p-6 rounded w-96">
+          <div className="bg-gray-900 p-6 rounded-2xl w-[420px] border border-white/10">
 
-            <h2>Edit Video</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Edit video</h2>
+              <button
+                onClick={() => {
+                  setEditingVideo(null);
+                  setRemoveThumbnail(false);
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
 
             {/* CURRENT THUMBNAIL */}
             {!removeThumbnail && editingVideo.thumbnail?.url && (
               <img
                 src={resolveMediaUrl(editingVideo.thumbnail.url)}
-                className="w-full h-40 mb-3"
+                className="w-full h-44 mb-3 rounded-xl object-cover"
               />
             )}
 
             <button
               onClick={() => setRemoveThumbnail(true)}
-              className="text-red-400 text-sm"
+              className="text-red-300 text-sm hover:underline"
             >
               Remove Thumbnail
             </button>
@@ -169,7 +213,7 @@ const Profile = () => {
               onChange={(e) =>
                 setFormData({ ...formData, title: e.target.value })
               }
-              className="w-full mt-3 p-2 bg-gray-800"
+              className="w-full mt-4 p-3 rounded-xl bg-black border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/20"
             />
 
             <textarea
@@ -177,7 +221,8 @@ const Profile = () => {
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
               }
-              className="w-full mt-3 p-2 bg-gray-800"
+              rows={4}
+              className="w-full mt-3 p-3 rounded-xl bg-black border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 resize-none"
             />
 
             {/*  VIDEO UPDATE */}
@@ -187,7 +232,7 @@ const Profile = () => {
               onChange={(e) =>
                 setFormData({ ...formData, videoFile: e.target.files[0] })
               }
-              className="mt-3"
+              className="mt-4"
             />
 
             {/*  THUMBNAIL */}
@@ -211,9 +256,10 @@ const Profile = () => {
                   data: formData,
                 })
               }
-              className="bg-blue-600 mt-4 px-3 py-1 rounded"
+              disabled={updateMutation.isPending}
+              className="bg-white text-black hover:bg-gray-200 mt-5 px-4 py-2 rounded-full font-medium disabled:opacity-60"
             >
-              Save
+              {updateMutation.isPending ? "Saving..." : "Save changes"}
             </button>
 
           </div>

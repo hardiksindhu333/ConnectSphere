@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { DB_NAME } from "../constants.js";
+import { Like } from "../models/like.model.js";
 
 // const connectDB = async () => {
 //     try {
@@ -28,6 +29,14 @@ const connectDB = async () => {
     console.log("Port:", connectionInstance.connection.port);
 
     console.log(`✅ MongoDB connected: ${connectionInstance.connection.host}`);
+
+    // Keep indexes in sync (prevents legacy unique index conflicts like tweet:null)
+    try {
+      await Like.syncIndexes();
+      console.log("✅ MongoDB indexes synced: Like");
+    } catch (e) {
+      console.log("⚠️ Could not sync Like indexes:", e?.message || e);
+    }
   } catch (error) {
     console.error("❌ MongoDB connection error:", error);
     process.exit(1); 

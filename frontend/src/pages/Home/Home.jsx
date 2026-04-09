@@ -1,9 +1,13 @@
 import VideoCard from "../../components/VideoCard.jsx";
 import { useVideos } from "../../hooks/useVideos.js";
 import VideoCardSkeleton from "../../components/skeletons/VideoCardSkeleton.jsx";
+import { useSearchParams } from "react-router-dom";
 
 const Home = () => {
-  const { data, isLoading, isError } = useVideos();
+  const [sp] = useSearchParams();
+  const q = (sp.get("q") || "").trim();
+
+  const { data, isLoading, isError } = useVideos({ query: q });
 
   const videos =
     data?.data?.docs ||
@@ -14,7 +18,12 @@ const Home = () => {
   return (
     <div className="flex-1 p-6">
 
-      <h1 className="text-2xl font-bold mb-6">Home Feed</h1>
+      <h1 className="text-2xl font-bold mb-2">
+        {q ? `Search results for "${q}"` : "Home Feed"}
+      </h1>
+      <div className="text-sm text-gray-400 mb-6">
+        {q ? "Showing related titles from your videos." : "Latest videos"}
+      </div>
 
       {isError && (
         <div className="bg-red-500/10 border border-red-500/20 text-red-200 p-4 rounded-lg mb-6">
@@ -31,7 +40,9 @@ const Home = () => {
       </div>
 
       {!isLoading && !isError && videos.length === 0 && (
-        <div className="text-gray-400 mt-8">No videos yet.</div>
+        <div className="text-gray-400 mt-8">
+          {q ? "No results found." : "No videos yet."}
+        </div>
       )}
     </div>
   );

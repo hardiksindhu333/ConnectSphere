@@ -2,7 +2,7 @@ import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { toggleLike } from "../api/like";
+import { toggleCommentLike, toggleLike } from "../api/like";
 import {
   getComments,
   addComment,
@@ -15,6 +15,16 @@ import API from "../api/axios.js";
 import { getFeedVideos, getVideoById as getVideoApiById } from "../api/videoApi.js";
 import { resolveMediaUrl } from "../utils/resolveMediaUrl.js";
 import { useNavigate } from "react-router-dom";
+import { Heart, MessageSquareText } from "lucide-react";
+import IconButton from "../components/ui/IconButton.jsx";
+import SubscribeButton from "../components/video/SubscribeButton.jsx";
+import CommentComposer from "../components/video/CommentComposer.jsx";
+import CommentThread from "../components/video/CommentThread.jsx";
+import { formatCompactNumber } from "../utils/formatters.js";
+import { useSubscribedChannels } from "../hooks/useSubscribedChannels.js";
+import { useLikedVideos } from "../hooks/useLikedVideos.js";
+import SaveToPlaylistModal from "../components/video/SaveToPlaylistModal.jsx";
+import { Bookmark } from "lucide-react";
 
 const VideoPlayer = () => {
   const { id } = useParams();
@@ -22,12 +32,11 @@ const VideoPlayer = () => {
   const navigate = useNavigate();
 
   const { user } = useAuthStore();
+  const [saveOpen, setSaveOpen] = useState(false);
 
-  const [commentText, setCommentText] = useState("");
-  const [editingCommentId, setEditingCommentId] = useState(null);
-  const [editText, setEditText] = useState("");
-  const [replyText, setReplyText] = useState("");
-  const [replyingTo, setReplyingTo] = useState(null);
+  // NOTE: Hooks must be called before early returns
+  const { data: subscribedChannels = [] } = useSubscribedChannels(user?._id);
+  const { data: likedVideos = [] } = useLikedVideos();
 
   // 🎥 VIDEO
   const {
@@ -62,6 +71,20 @@ const VideoPlayer = () => {
   // ❤️ LIKE
   const likeMutation = useMutation({
     mutationFn: () => toggleLike(id),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["video", id] });
+      const previous = queryClient.getQueryData(["video", id]);
+      queryClient.setQueryData(["video", id], (old) => {
+        if (!old) return old;
+        const wasLiked = !!old.isLikedByUser;
+        return {
+          ...old,
+          isLikedByUser: !wasLiked,
+          likesCount: Math.max(0, (old.likesCount || 0) + (wasLiked ? -1 : 1)),
+        };
+      });
+      return { previous };
+    },
     onSuccess: (data) => {
       queryClient.setQueryData(["video", id], (old) => {
         if (!old) return old;
@@ -71,16 +94,53 @@ const VideoPlayer = () => {
         };
       });
     },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["likedVideos"] });
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(["video", id], ctx.previous);
+    },
   });
 
   // 🔴 SUBSCRIBE
   const subscribeMutation = useMutation({
     mutationFn: async (channelId) => {
-      await API.post(`/subscriptions/c/${channelId}`);
+      const res = await API.post(`/subscriptions/c/${channelId}`);
+      return res.data;
+    },
+    onMutate: async (channelId) => {
+      await queryClient.cancelQueries({ queryKey: ["video", id] });
+      const previous = queryClient.getQueryData(["video", id]);
+      queryClient.setQueryData(["video", id], (old) => {
+        if (!old) return old;
+        if (!channelId || old?.owner?._id !== channelId) return old;
+        const was = !!old.isSubscribed;
+        return {
+          ...old,
+          isSubscribed: !was,
+          subscriberCount: Math.max(
+            0,
+            (old.subscriberCount || 0) + (was ? -1 : 1)
+          ),
+        };
+      });
+      return { previous };
+    },
+    onSuccess: (res) => {
+      const isSubscribed = res?.data?.isSubscribed;
+      if (typeof isSubscribed !== "boolean") return;
+      queryClient.setQueryData(["video", id], (old) => {
+        if (!old) return old;
+        return { ...old, isSubscribed };
+      });
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(["video", id], ctx.previous);
     },
     onSettled: () => {
-      queryClient.invalidateQueries(["video", id]);
-      queryClient.invalidateQueries(["feed"]);
+      queryClient.invalidateQueries({ queryKey: ["video", id] });
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+      queryClient.invalidateQueries({ queryKey: ["subscribedChannels", user?._id] });
     },
   });
 
@@ -94,10 +154,8 @@ const VideoPlayer = () => {
   const commentMutation = useMutation({
     mutationFn: addComment,
     onSuccess: () => {
-      queryClient.invalidateQueries(["comments", id]);
-      setCommentText("");
-      setReplyText("");
-      setReplyingTo(null);
+      queryClient.invalidateQueries({ queryKey: ["comments", id] });
+      queryClient.invalidateQueries({ queryKey: ["video", id] });
     },
   });
 
@@ -105,8 +163,7 @@ const VideoPlayer = () => {
   const updateCommentMutation = useMutation({
     mutationFn: updateComment,
     onSuccess: () => {
-      queryClient.invalidateQueries(["comments", id]);
-      setEditingCommentId(null);
+      queryClient.invalidateQueries({ queryKey: ["comments", id] });
     },
   });
 
@@ -114,8 +171,14 @@ const VideoPlayer = () => {
   const deleteCommentMutation = useMutation({
     mutationFn: deleteComment,
     onSuccess: () => {
-      queryClient.invalidateQueries(["comments", id]);
+      queryClient.invalidateQueries({ queryKey: ["comments", id] });
+      queryClient.invalidateQueries({ queryKey: ["video", id] });
     },
+  });
+
+  const commentLikeMutation = useMutation({
+    mutationFn: toggleCommentLike,
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["comments", id] }),
   });
 
   if (isLoading) return <div className="text-white p-6">Loading...</div>;
@@ -130,9 +193,22 @@ const VideoPlayer = () => {
   }
 
   const videoSrc = resolveMediaUrl(video?.videoFile?.url);
+  const ownerAvatar = resolveMediaUrl(video?.owner?.avatar?.url || video?.owner?.avatar);
+
+  // derive subscription/like state (because backend video routes are public and don't run verifyJWT)
+  const subscribedSet = new Set(subscribedChannels.map((c) => c.channelId));
+  const derivedIsSubscribed = !!(video?.owner?._id && subscribedSet.has(video.owner._id));
+
+  const likedSet = new Set(likedVideos.map((v) => v.videoId));
+  const derivedIsLiked = !!(id && likedSet.has(id));
 
   return (
     <div className="min-h-screen bg-black text-white p-6">
+      <SaveToPlaylistModal
+        open={saveOpen}
+        onClose={() => setSaveOpen(false)}
+        videoId={id}
+      />
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-8">
 
         {/* LEFT SIDE */}
@@ -161,198 +237,107 @@ const VideoPlayer = () => {
           </h1>
 
           {/* OWNER + SUBSCRIBE */}
-          <div className="flex justify-between mt-4 items-center">
+          <div className="flex justify-between mt-4 items-center gap-4">
 
             <div className="flex gap-3 items-center">
-              <img
-                src={video?.owner?.avatar}
-                className="w-10 h-10 rounded-full"
-              />
+              {ownerAvatar ? (
+                <img
+                  src={ownerAvatar}
+                  className="w-10 h-10 rounded-full object-cover bg-white/10"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-white/10" />
+              )}
               <div>
-                <p>{video?.owner?.username}</p>
+                <p className="font-semibold">{video?.owner?.username}</p>
                 <p className="text-sm text-gray-400">
-                  {video?.subscriberCount || 0} subscribers
+                  {formatCompactNumber(video?.subscriberCount || 0)} subscribers
                 </p>
               </div>
             </div>
 
-            <button
-              onClick={() =>
-                subscribeMutation.mutate(video?.owner?._id)
-              }
-              className={`px-4 py-2 rounded ${
-                video?.isSubscribed
-                  ? "bg-gray-600"
-                  : "bg-red-600"
-              }`}
-            >
-              {video?.isSubscribed ? "Subscribed" : "Subscribe"}
-            </button>
+            <SubscribeButton
+              isSubscribed={derivedIsSubscribed}
+              disabled={subscribeMutation.isPending || !video?.owner?._id}
+              onClick={() => subscribeMutation.mutate(video?.owner?._id)}
+            />
 
           </div>
 
-          {/* LIKE */}
-          <button
-            onClick={() => likeMutation.mutate()}
-            className="mt-4 bg-white/10 px-4 py-2 rounded"
-          >
-            👍 Like ({video?.likesCount || 0})
-          </button>
+          {/* ACTIONS */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <IconButton
+              onClick={() => likeMutation.mutate()}
+              disabled={likeMutation.isPending}
+              className={derivedIsLiked ? "bg-white/15" : ""}
+              title="Like"
+            >
+              <Heart size={16} />
+              <span className="text-sm font-medium">
+                {formatCompactNumber(video?.likesCount || 0)}
+              </span>
+            </IconButton>
+            <IconButton title="Comments">
+              <MessageSquareText size={16} />
+              <span className="text-sm font-medium">
+                {formatCompactNumber(video?.commentsCount || 0)}
+              </span>
+            </IconButton>
+            <IconButton onClick={() => setSaveOpen(true)} title="Save to playlist">
+              <Bookmark size={16} />
+              <span className="text-sm font-medium">Save</span>
+            </IconButton>
+          </div>
 
           {/* ADD COMMENT */}
-          <div className="mt-6">
-            <input
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              className="w-full p-3 bg-white/10 rounded"
-              placeholder="Add comment..."
-            />
-            <button
-              onClick={() =>
+          <div className="mt-8">
+            <div className="text-sm font-semibold text-gray-200 mb-4">
+              Comments ({formatCompactNumber(video?.commentsCount || comments.length || 0)})
+            </div>
+            <CommentComposer
+              avatarSrc={resolveMediaUrl(user?.avatar?.url || user?.avatar)}
+              onSubmit={(content) =>
                 commentMutation.mutate({
                   videoId: id,
-                  content: commentText,
+                  content,
                 })
               }
-              className="mt-2 bg-white text-black px-4 py-2 rounded"
-            >
-              Comment
-            </button>
+              isSubmitting={commentMutation.isPending}
+            />
           </div>
 
           {/* COMMENTS */}
           <div className="mt-6 space-y-6">
+            {comments.length === 0 ? (
+              <div className="text-gray-400 text-sm">
+                Be the first to comment.
+              </div>
+            ) : null}
 
             {comments.map((c) => (
-              <div key={c._id}>
-
-                {/* MAIN COMMENT */}
-                <div className="flex gap-3">
-
-                  <img
-                    src={c.owner?.avatar}
-                    className="w-8 h-8 rounded-full"
-                  />
-
-                  <div className="flex-1">
-
-                    <p className="font-semibold text-sm">
-                      {c.owner?.username}
-                    </p>
-
-                    {/* EDIT MODE */}
-                    {editingCommentId === c._id ? (
-                      <>
-                        <input
-                          value={editText}
-                          onChange={(e) => setEditText(e.target.value)}
-                          className="w-full p-2 bg-white/10 rounded mt-1"
-                        />
-
-                        <button
-                          onClick={() =>
-                            updateCommentMutation.mutate({
-                              commentId: c._id,
-                              content: editText,
-                            })
-                          }
-                          className="mt-1 bg-white text-black px-2 py-1 rounded"
-                        >
-                          Save
-                        </button>
-                      </>
-                    ) : (
-                      <p className="text-gray-300 mt-1">
-                        {c.content}
-                      </p>
-                    )}
-
-                    {/* ACTIONS */}
-                    <div className="flex gap-4 text-sm text-gray-400 mt-1">
-
-                      <button onClick={() => setReplyingTo(c._id)}>
-                        Reply
-                      </button>
-
-                      {c.owner?._id === user?._id && (
-                        <>
-                          <button
-                            onClick={() => {
-                              setEditingCommentId(c._id);
-                              setEditText(c.content);
-                            }}
-                          >
-                            Edit
-                          </button>
-
-                          <button
-                            onClick={() =>
-                              deleteCommentMutation.mutate(c._id)
-                            }
-                            className="text-red-400"
-                          >
-                            Delete
-                          </button>
-                        </>
-                      )}
-
-                    </div>
-
-                    {/* REPLY INPUT */}
-                    {replyingTo === c._id && (
-                      <div className="mt-2">
-                        <input
-                          value={replyText}
-                          onChange={(e) => setReplyText(e.target.value)}
-                          className="w-full p-2 bg-white/10 rounded"
-                        />
-
-                        <button
-                          onClick={() =>
-                            commentMutation.mutate({
-                              videoId: id,
-                              content: replyText,
-                              parentComment: c._id,
-                            })
-                          }
-                          className="mt-1 bg-white text-black px-3 py-1 rounded"
-                        >
-                          Reply
-                        </button>
-                      </div>
-                    )}
-
-                    {/* REPLIES */}
-                    <div className="ml-6 mt-3 space-y-2 border-l border-gray-700 pl-4">
-
-                      {c.replies?.map((r) => (
-                        <div key={r._id} className="flex gap-2">
-
-                          <img
-                            src={r.owner?.avatar}
-                            className="w-6 h-6 rounded-full"
-                          />
-
-                          <div>
-                            <p className="text-sm font-semibold">
-                              {r.owner?.username}
-                            </p>
-                            <p className="text-gray-300 text-sm">
-                              {r.content}
-                            </p>
-                          </div>
-
-                        </div>
-                      ))}
-
-                    </div>
-
-                  </div>
-                </div>
-
-              </div>
+              <CommentThread
+                key={c._id}
+                comment={c}
+                currentUserId={user?._id}
+                onReply={(parentId, content) =>
+                  commentMutation.mutate({
+                    videoId: id,
+                    content,
+                    parentComment: parentId,
+                  })
+                }
+                onEdit={(commentId, content) =>
+                  updateCommentMutation.mutate({ commentId, content })
+                }
+                onDelete={(commentId) => {
+                  const ok = window.confirm("Delete this comment?");
+                  if (ok) deleteCommentMutation.mutate(commentId);
+                }}
+                onLike={(commentId) => commentLikeMutation.mutate(commentId)}
+                isLiking={commentLikeMutation.isPending}
+                isDeleting={deleteCommentMutation.isPending}
+              />
             ))}
-
           </div>
 
         </div>
