@@ -159,7 +159,7 @@ const VideoPlayer = () => {
     },
   });
 
-  // ✏️ UPDATE
+  // UPDATE
   const updateCommentMutation = useMutation({
     mutationFn: updateComment,
     onSuccess: () => {
@@ -167,7 +167,7 @@ const VideoPlayer = () => {
     },
   });
 
-  // ❌ DELETE
+  // DELETE
   const deleteCommentMutation = useMutation({
     mutationFn: deleteComment,
     onSuccess: () => {

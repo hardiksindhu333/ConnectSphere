@@ -41,7 +41,6 @@ export default function Subscriptions() {
                 )}
                 <div className="min-w-0">
                   <div className="font-semibold truncate">{c.username}</div>
-                  <div className="text-xs text-gray-400 truncate">{c.channelId}</div>
                 </div>
               </div>
             </button>

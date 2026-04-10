@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
@@ -15,7 +15,7 @@ const UploadVideo = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   const navigate = useNavigate();
-  const queryClient = useQueryClient(); // 🔥 IMPORTANT
+  const queryClient = useQueryClient(); // IMPORTANT
 
   const videoPreviewUrl = useMemo(
     () => (videoFile ? URL.createObjectURL(videoFile) : null),
@@ -25,6 +25,17 @@ const UploadVideo = () => {
     () => (thumbnail ? URL.createObjectURL(thumbnail) : null),
     [thumbnail]
   );
+
+  const videoInputRef = useRef(null);
+  const thumbInputRef = useRef(null);
+
+  const onVideoSelect = (file) => {
+    setVideoFile(file || null);
+  };
+
+  const onThumbSelect = (file) => {
+    setThumbnail(file || null);
+  };
 
  const handleSubmit = async (e) => {
   e.preventDefault();
@@ -48,7 +59,7 @@ const UploadVideo = () => {
 
     toast.success("Video uploaded");
 
-    // ✅ CORRECT INVALIDATION
+    // CORRECT INVALIDATION
     await queryClient.invalidateQueries({ queryKey: ["videos"] });
     await queryClient.invalidateQueries({ queryKey: ["feed"] });
 
@@ -95,25 +106,113 @@ const UploadVideo = () => {
 
               <div>
                 <div className="text-sm text-gray-300 font-medium mb-2">Video file</div>
-                <input
-                  type="file"
-                  accept="video/*"
-                  onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
-                />
-                {videoFile ? (
-                  <div className="text-xs text-gray-400 mt-2">
-                    {videoFile.name} • {(videoFile.size / (1024 * 1024)).toFixed(1)} MB
+
+                <div
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const f = e.dataTransfer.files?.[0];
+                    if (f && f.type.startsWith("video/")) onVideoSelect(f);
+                  }}
+                  className="rounded-xl p-4 border-2 border-dashed border-white/10 bg-black/5 flex items-center justify-between gap-4"
+                >
+                  <div className="min-w-0">
+                    <div className="text-sm text-gray-300">Drag & drop a video, or</div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      MP4, MOV, WEBM — max file size depends on server
+                    </div>
+                    {videoFile ? (
+                      <div className="text-xs text-gray-400 mt-2 truncate">
+                        {videoFile.name} • {(videoFile.size / (1024 * 1024)).toFixed(1)} MB
+                      </div>
+                    ) : null}
                   </div>
-                ) : null}
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      ref={videoInputRef}
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      onChange={(e) => onVideoSelect(e.target.files?.[0] || null)}
+                    />
+                    {videoFile ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => videoInputRef.current?.click()}
+                          className="px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm"
+                        >
+                          Replace
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onVideoSelect(null)}
+                          className="px-3 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-sm text-white"
+                        >
+                          Remove
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => videoInputRef.current?.click()}
+                        className="px-4 py-2 rounded-lg bg-white text-black font-medium hover:bg-gray-200 text-sm"
+                      >
+                        Choose file
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div>
                 <div className="text-sm text-gray-300 font-medium mb-2">Thumbnail</div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setThumbnail(e.target.files?.[0] || null)}
-                />
+
+                <div className="flex items-start gap-4">
+                  <div className="w-32 h-20 rounded-xl bg-white/10 overflow-hidden border border-white/10">
+                    {thumbPreviewUrl ? (
+                      <img src={thumbPreviewUrl} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                        No image
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1">
+                    <input
+                      ref={thumbInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => onThumbSelect(e.target.files?.[0] || null)}
+                    />
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => thumbInputRef.current?.click()}
+                        className="px-4 py-2 rounded-lg bg-white text-black font-medium hover:bg-gray-200 text-sm"
+                      >
+                        {thumbnail ? "Change" : "Choose image"}
+                      </button>
+                      {thumbnail ? (
+                        <button
+                          type="button"
+                          onClick={() => onThumbSelect(null)}
+                          className="px-3 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-sm text-white"
+                        >
+                          Remove
+                        </button>
+                      ) : null}
+                    </div>
+
+                    <div className="text-xs text-gray-400 mt-2">
+                      Recommended: 1280x720, JPG/PNG
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <button

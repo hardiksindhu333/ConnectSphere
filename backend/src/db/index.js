@@ -28,17 +28,17 @@ const connectDB = async () => {
     console.log("Host:", connectionInstance.connection.host);
     console.log("Port:", connectionInstance.connection.port);
 
-    console.log(`✅ MongoDB connected: ${connectionInstance.connection.host}`);
+    console.log(`MongoDB connected: ${connectionInstance.connection.host}`);
 
     // Keep indexes in sync (prevents legacy unique index conflicts like tweet:null)
     try {
       await Like.syncIndexes();
-      console.log("✅ MongoDB indexes synced: Like");
+      console.log("MongoDB indexes synced: Like");
     } catch (e) {
-      console.log("⚠️ Could not sync Like indexes:", e?.message || e);
+      console.log("Could not sync Like indexes:", e?.message || e);
     }
   } catch (error) {
-    console.error("❌ MongoDB connection error:", error);
+    console.error("MongoDB connection error:", error);
     process.exit(1); 
   }
 };

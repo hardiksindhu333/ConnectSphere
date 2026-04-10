@@ -18,7 +18,7 @@ const Profile = () => {
     title: "",
     description: "",
     thumbnail: null,
-    videoFile: null, // ✅ NEW
+    videoFile: null, // NEW
   });
 
   const [editingProfile, setEditingProfile] = useState(false);
@@ -329,7 +329,7 @@ const Profile = () => {
                 }}
                 className="text-gray-400 hover:text-white"
               >
-                ✕
+                Close
               </button>
             </div>
 

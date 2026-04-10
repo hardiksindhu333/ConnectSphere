@@ -40,9 +40,7 @@ const addComment = asyncHandler(async (req, res) => {
 
 //  Get Video Comments (NO likes aggregation, uses stored likesCount)
 const getVideoComments = asyncHandler(async (req, res) => {
-
     const { videoId } = req.params;
-    const { page = 1, limit = 10 } = req.query;
 
     if (!videoId) {
         throw new ApiError(400, "videoId is missing");
@@ -52,107 +50,31 @@ const getVideoComments = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid videoId");
     }
 
-    const comments = await Comment.aggregate([
-        {
-            $match: {
-                video: new mongoose.Types.ObjectId(videoId),
-                parentComment: null
-            }
-        },
-        {
-            $sort: { createdAt: -1 }
-        },
-        {
-            $skip: (page - 1) * Number(limit)
-        },
-        {
-            $limit: Number(limit)
-        },
+    // Fetch all comments for the video and populate owner
+    const allComments = await Comment.find({ video: videoId })
+        .sort({ createdAt: -1 })
+        .populate("owner", "username avatar")
+        .lean();
 
-        //  owner details
-        {
-            $lookup: {
-                from: "users",
-                localField: "owner",
-                foreignField: "_id",
-                as: "owner"
-            }
-        },
-        {
-            $unwind: "$owner"
-        },
+    // Build a map of comments and nest replies under their parents
+    const map = new Map();
+    allComments.forEach((c) => {
+        map.set(String(c._id), { ...c, replies: [] });
+    });
 
-        //  replies
-        {
-            $lookup: {
-                from: "comments",
-                localField: "_id",
-                foreignField: "parentComment",
-                as: "replies"
-            }
-        },
-
-        //  reply owners
-        {
-            $lookup: {
-                from: "users",
-                localField: "replies.owner",
-                foreignField: "_id",
-                as: "replyOwners"
-            }
-        },
-
-        //  attach owner + likesCount to replies
-        {
-            $addFields: {
-                replies: {
-                    $map: {
-                        input: "$replies",
-                        as: "reply",
-                        in: {
-                            _id: "$$reply._id",
-                            content: "$$reply.content",
-                            createdAt: "$$reply.createdAt",
-                            likesCount: "$$reply.likesCount",
-                            owner: {
-                                $arrayElemAt: [
-                                    {
-                                        $filter: {
-                                            input: "$replyOwners",
-                                            as: "ro",
-                                            cond: {
-                                                $eq: ["$$ro._id", "$$reply.owner"]
-                                            }
-                                        }
-                                    },
-                                    0
-                                ]
-                            }
-                        }
-                    }
-                }
-            }
-        },
-
-        //  final response
-        {
-            $project: {
-                _id: 1,
-                content: 1,
-                createdAt: 1,
-                likesCount: 1,   //  from DB (no aggregation)
-                owner: {
-                    _id: "$owner._id",
-                    username: "$owner.username",
-                    avatar: "$owner.avatar"
-                },
-                replies: 1
-            }
+    const roots = [];
+    for (const c of allComments) {
+        if (c.parentComment) {
+            const parent = map.get(String(c.parentComment));
+            if (parent) parent.replies.push(map.get(String(c._id)));
+            else roots.push(map.get(String(c._id))); // fallback
+        } else {
+            roots.push(map.get(String(c._id)));
         }
-    ]);
+    }
 
     return res.status(200).json(
-        new ApiResponse(200, comments, "Comments fetched successfully")
+        new ApiResponse(200, roots, "Comments fetched successfully")
     );
 });
 

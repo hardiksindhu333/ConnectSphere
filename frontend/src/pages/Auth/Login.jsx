@@ -1,10 +1,10 @@
 import { motion as Motion } from "framer-motion";
 import { useState } from "react";
-import { useLogin } from "../../hooks/useLogin.js"; // ✅ IMPORTANT
+import { useLogin } from "../../hooks/useLogin.js";
 import { useNavigate } from "react-router-dom";
 
 function Login() {
-  const { mutate, isPending } = useLogin(); // ✅ connect API
+  const { mutate, isPending } = useLogin();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -14,7 +14,7 @@ function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Submitting:", form); // 🔍 debug
+    console.log("Submitting:", form);
     mutate(form);
   };
 

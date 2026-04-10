@@ -26,19 +26,19 @@ const likeSchema = new Schema(
 },
 { timestamps: true }
 );
-// ✅ video like unique
+// video like unique
 likeSchema.index(
   { likedBy: 1, video: 1 },
   { unique: true, partialFilterExpression: { video: { $type: "objectId" } } }
 );
 
-// ✅ comment like unique
+// comment like unique
 likeSchema.index(
   { likedBy: 1, comment: 1 },
   { unique: true, partialFilterExpression: { comment: { $type: "objectId" } } }
 );
 
-// ✅ tweet like unique
+// tweet like unique
 likeSchema.index(
   { likedBy: 1, tweet: 1 },
   { unique: true, partialFilterExpression: { tweet: { $type: "objectId" } } }

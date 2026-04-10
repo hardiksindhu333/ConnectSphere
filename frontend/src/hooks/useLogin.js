@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 
 export const useLogin = () => {
   const login = useAuthStore((state) => state.login);
-  const navigate = useNavigate(); // ✅
+  const navigate = useNavigate();
 
   return useMutation({
     mutationFn: loginUser,
@@ -16,7 +16,7 @@ export const useLogin = () => {
 
       login(data.data.user); // store user
 
-      toast.success("Login successful 🚀");
+      toast.success("Login successful");
 
       navigate("/"); 
     },

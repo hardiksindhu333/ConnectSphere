@@ -139,35 +139,16 @@ export default function PlaylistDetail() {
 
         <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
           <div className="font-semibold">Add video</div>
-          <div className="mt-3 flex gap-2">
-            <input
-              value={videoId}
-              onChange={(e) => setVideoId(e.target.value)}
-              placeholder="Video ID"
-              className="flex-1 p-3 rounded-xl bg-black border border-white/10"
-            />
-            <button
-              onClick={() => {
-                if (!videoId.trim()) return toast.error("Video ID required");
-                addMutation.mutate({ playlistId: id, videoId: videoId.trim() });
-              }}
-              disabled={addMutation.isPending}
-              className="px-4 py-2 rounded-full bg-white text-black hover:bg-gray-200 disabled:opacity-60"
-            >
-              {addMutation.isPending ? "Adding..." : "Add"}
-            </button>
-          </div>
-          <p className="text-xs text-gray-500 mt-2">
-            Tip: paste a video `_id` from MongoDB.
-          </p>
-
-          <div className="mt-4">
-            <button
-              onClick={() => setBrowseOpen(true)}
-              className="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium"
-            >
-              Browse videos (easy)
-            </button>
+          <div className="mt-3">
+            <p className="text-sm text-gray-400">Use Browse to pick videos to add to this playlist.</p>
+            <div className="mt-3">
+              <button
+                onClick={() => setBrowseOpen(true)}
+                className="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium"
+              >
+                Browse videos 
+              </button>
+            </div>
           </div>
         </div>
       </div>

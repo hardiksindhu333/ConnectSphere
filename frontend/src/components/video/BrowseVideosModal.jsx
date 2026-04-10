@@ -27,7 +27,7 @@ export default function BrowseVideosModal({ open, onClose, title, onPickVideo })
         <div className="p-4 border-b border-white/10 flex items-center justify-between">
           <div className="font-semibold">{title || "Browse videos"}</div>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
-            ✕
+            Close
           </button>
         </div>
 

@@ -5,7 +5,7 @@ const uploadOnCloudinary = async (localFilePath) => {
   try {
     if (!localFilePath) return null;
 
-    // 🔥 CONFIG HERE (ensures env is loaded)
+    // CONFIG HERE (ensures env is loaded)
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
       api_key: process.env.CLOUDINARY_API_KEY,
@@ -25,7 +25,7 @@ const uploadOnCloudinary = async (localFilePath) => {
     return response;
 
   } catch (error) {
-    console.error("❌ Cloudinary upload failed:", error.message);
+    console.error("Cloudinary upload failed:", error.message);
     return null;
   }
 };
