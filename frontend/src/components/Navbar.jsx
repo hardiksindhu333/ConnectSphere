@@ -5,7 +5,7 @@ import { logoutUser } from "../api/authApi.js";
 import toast from "react-hot-toast";
 import { Search } from "lucide-react";
 import { resolveMediaUrl } from "../utils/resolveMediaUrl.js";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const Navbar = () => {
   const user = useAuthStore((state) => state.user);
@@ -13,6 +13,19 @@ const Navbar = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [q, setQ] = useState("");
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClick(e) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const logoutMutation = useMutation({
     mutationFn: logoutUser,
@@ -62,26 +75,56 @@ const Navbar = () => {
           Upload
         </NavLink>
 
-        <button
-          onClick={() => navigate("/profile")}
-          className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-white/5 transition"
-        >
-          {avatar ? (
-            <img src={avatar} className="w-9 h-9 rounded-full object-cover bg-white/10" />
-          ) : (
-            <div className="w-9 h-9 rounded-full bg-white/10" />
-          )}
-          <span className="hidden sm:block text-sm text-gray-200 max-w-[180px] truncate">
-            {user?.fullName || user?.username}
-          </span>
-        </button>
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setOpen((v) => !v)}
+            aria-haspopup="true"
+            aria-expanded={open}
+            className="flex items-center gap-2 px-2 py-1 rounded-full hover:bg-white/5 transition"
+          >
+            {avatar ? (
+              <img src={avatar} className="w-9 h-9 rounded-full object-cover bg-white/10" />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-white/10" />
+            )}
+          </button>
 
-        <button
-          onClick={() => logoutMutation.mutate()}
-          className="bg-red-500/90 hover:bg-red-500 px-4 py-2 rounded-full text-sm font-medium"
-        >
-          Logout
-        </button>
+          {open && (
+            <div className="absolute right-0 mt-2 w-72 bg-black/90 border border-white/10 rounded-md p-4 text-sm z-50">
+              <div className="flex items-center gap-3">
+                {avatar ? (
+                  <img src={avatar} className="w-12 h-12 rounded-full object-cover bg-white/10" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-white/10" />
+                )}
+                <div className="truncate">
+                  <div className="font-medium text-gray-100">{user?.fullName || user?.username}</div>
+                  <div className="text-gray-400 text-xs truncate">{user?.email}</div>
+                  <div className="text-gray-400 text-xs">{user?.username && `@${user.username}`}</div>
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    navigate("/profile?edit=1");
+                  }}
+                  className="px-3 py-1 bg-white/5 hover:bg-white/10 rounded text-sm font-medium"
+                >
+                  Edit profile
+                </button>
+
+                <button
+                  onClick={() => logoutMutation.mutate()}
+                  className="px-3 py-1 bg-red-500/90 hover:bg-red-500 rounded text-sm font-medium"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
       </div>
     </div>

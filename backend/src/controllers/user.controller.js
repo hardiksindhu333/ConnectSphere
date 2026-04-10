@@ -491,15 +491,24 @@ const getCurrentUser = asyncHandler(async(req,res) =>{
 
 const updateAccountDetails = asyncHandler(async(req,res) =>{
 
-    const {fullName,email} = req.body
-    if(!fullName || !email){
+    const {fullName,email,username} = req.body
+    if(!fullName || !email || !username){
         throw new ApiError(400,"all fields are required")
+    }
+
+    // Ensure username and email uniqueness
+    const existing = await User.findOne({
+        $or: [{ username: username.toLowerCase() }, { email }]
+    });
+
+    if (existing && existing._id.toString() !== req.user._id.toString()) {
+        throw new ApiError(400, "username or email already in use");
     }
 
     const user = await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set: {fullName,email}
+            $set: {fullName,email, username: username.toLowerCase()}
         },
         {
             new: true
@@ -511,6 +520,36 @@ const updateAccountDetails = asyncHandler(async(req,res) =>{
         .json(new ApiResponse(200,user,"account updated successfully"))
 
 })
+
+
+const deleteAccount = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id).select("avatar coverImage");
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    if (user.avatar?.public_id) {
+        try {
+            await deleteFromCloudinary(user.avatar.public_id);
+        } catch (err) {
+            // swallow
+        }
+    }
+
+    if (user.coverImage?.public_id) {
+        try {
+            await deleteFromCloudinary(user.coverImage.public_id);
+        } catch (err) {
+            // swallow
+        }
+    }
+
+    await User.findByIdAndDelete(req.user._id);
+
+    return res.status(200).json(new ApiResponse(200, {}, "Account deleted successfully"));
+
+});
 
 
 
@@ -762,4 +801,6 @@ export {registerUser,
     updateUserAvatar,
     updateUserCoverImage,
     getUserChannelProfile,
-    getWatchHistory}
+    getWatchHistory,
+    deleteAccount}
+    

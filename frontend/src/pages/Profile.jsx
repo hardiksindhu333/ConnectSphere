@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getMyProfile, getMyVideos } from "../api/user";
-import { useState } from "react";
+import { getMyProfile, getMyVideos, updateAccount, updateAvatar, updateCoverImage, deleteAccount } from "../api/user";
+import { useState, useEffect } from "react";
 import API from "../api/axios.js";
 import { resolveMediaUrl } from "../utils/resolveMediaUrl.js";
 import toast from "react-hot-toast";
 import { Pencil, Trash2, Eye, EyeOff } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import useAuthStore from "../store/authStore.js";
 
 const Profile = () => {
   const queryClient = useQueryClient();
@@ -19,10 +21,26 @@ const Profile = () => {
     videoFile: null, // ✅ NEW
   });
 
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({ username: "", fullName: "", email: "" });
+  const [newAvatarFile, setNewAvatarFile] = useState(null);
+  const [newCoverFile, setNewCoverFile] = useState(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const logout = useAuthStore((s) => s.logout);
+
   const { data: user } = useQuery({
     queryKey: ["profile"],
     queryFn: getMyProfile,
   });
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("edit")) {
+      setEditingProfile(true);
+      setProfileForm({ username: (user?.username) || "", fullName: (user?.fullName) || "", email: (user?.email) || "" });
+    }
+  }, [location.search, user]);
 
   const { data: videos = [] } = useQuery({
     queryKey: ["myVideos"],
@@ -75,11 +93,51 @@ const Profile = () => {
     },
   });
 
+  // profile mutations
+  const updateAccountMutation = useMutation({
+    mutationFn: (data) => updateAccount(data),
+    onSuccess: (res) => {
+      toast.success("Profile updated");
+      queryClient.invalidateQueries(["profile"]);
+      setEditingProfile(false);
+    },
+    onError: (err) => toast.error(err?.response?.data?.message || "Error updating profile"),
+  });
+
+  const updateAvatarMutation = useMutation({
+    mutationFn: (file) => updateAvatar(file),
+    onSuccess: () => {
+      toast.success("Avatar updated");
+      queryClient.invalidateQueries(["profile"]);
+      setNewAvatarFile(null);
+    },
+  });
+
+  const updateCoverMutation = useMutation({
+    mutationFn: (file) => updateCoverImage(file),
+    onSuccess: () => {
+      toast.success("Cover image updated");
+      queryClient.invalidateQueries(["profile"]);
+      setNewCoverFile(null);
+    },
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: () => deleteAccount(),
+    onSuccess: () => {
+      toast.success("Account deleted");
+      logout();
+      queryClient.clear();
+      navigate("/signup");
+    },
+    onError: (err) => toast.error(err?.response?.data?.message || "Error deleting account"),
+  });
+
   return (
     <div className="p-6 max-w-6xl mx-auto text-white">
 
       {/* PROFILE */}
-      <div className="flex items-center gap-6 mb-10">
+      <div className="flex items-center gap-6 mb-6">
         {resolveMediaUrl(user?.avatar?.url || user?.avatar) ? (
           <img
             src={resolveMediaUrl(user?.avatar?.url || user?.avatar)}
@@ -88,9 +146,91 @@ const Profile = () => {
         ) : (
           <div className="w-24 h-24 rounded-full bg-white/10" />
         )}
-        <div>
-          <h1 className="text-3xl font-bold">{user?.username}</h1>
-          <p className="text-gray-400">{user?.email}</p>
+        <div className="flex-1">
+          <div className="flex items-center gap-4">
+            <div>
+              <h1 className="text-3xl font-bold">{user?.username}</h1>
+              <p className="text-gray-400">{user?.email}</p>
+            </div>
+
+            <div className="ml-auto">
+              <button
+                onClick={() => {
+                  setEditingProfile((v) => !v);
+                  // populate form when opening
+                  setProfileForm({ username: user?.username || "", fullName: user?.fullName || "", email: user?.email || "" });
+                }}
+                className="px-3 py-1 bg-white/5 hover:bg-white/10 rounded text-sm"
+              >
+                {editingProfile ? "Cancel" : "Edit profile"}
+              </button>
+            </div>
+          </div>
+
+          {editingProfile && (
+            <div className="mt-4 bg-black/60 p-4 rounded-md border border-white/10">
+              <label className="block text-xs text-gray-300">Username</label>
+              <input
+                value={profileForm.username}
+                onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })}
+                className="w-full mt-1 p-2 rounded bg-black border border-white/10"
+              />
+
+              <label className="block text-xs text-gray-300 mt-3">Full name</label>
+              <input
+                value={profileForm.fullName}
+                onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
+                className="w-full mt-1 p-2 rounded bg-black border border-white/10"
+              />
+
+              <label className="block text-xs text-gray-300 mt-3">Email</label>
+              <input
+                value={profileForm.email}
+                onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                className="w-full mt-1 p-2 rounded bg-black border border-white/10"
+              />
+
+              <label className="block text-xs text-gray-300 mt-3">Avatar</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setNewAvatarFile(e.target.files[0])}
+                className="w-full mt-1"
+              />
+
+              <label className="block text-xs text-gray-300 mt-3">Cover image</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setNewCoverFile(e.target.files[0])}
+                className="w-full mt-1"
+              />
+
+              <div className="mt-4 flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    updateAccountMutation.mutate(profileForm);
+                    if (newAvatarFile) updateAvatarMutation.mutate(newAvatarFile);
+                    if (newCoverFile) updateCoverMutation.mutate(newCoverFile);
+                  }}
+                  className="px-4 py-2 bg-white text-black rounded"
+                  disabled={updateAccountMutation.isLoading}
+                >
+                  Save changes
+                </button>
+
+                <button
+                  onClick={() => {
+                    const ok = window.confirm("Are you sure you want to delete your account? This is irreversible.");
+                    if (ok) deleteAccountMutation.mutate();
+                  }}
+                  className="px-4 py-2 bg-red-600 rounded text-sm"
+                >
+                  Delete account
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
