@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "../pages/Auth/Login.jsx";
 import Signup from "../pages/Auth/Signup.jsx";
-import VerifyOtp from "../pages/Auth/VerifyOtp.jsx";
+import ForgotPassword from "../pages/Auth/ForgotPassword.jsx";
 
 import Home from "../pages/Home/Home.jsx";
 import VideoPlayer from "../pages/VideoPlayer.jsx";
@@ -24,7 +24,7 @@ export default function AppRoutes() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
-      <Route path="/verify-otp" element={<VerifyOtp />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
 
       <Route
         element={

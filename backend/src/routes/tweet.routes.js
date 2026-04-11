@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
     createTweet,
+    getAllTweets,
     getUserTweets,
     updateTweet,
     deleteTweet,
@@ -15,6 +16,11 @@ router.post(
     "/",
     verifyJWT,
     createTweet
+);
+
+router.get(
+    "/",
+    getAllTweets
 );
 
 router.get(

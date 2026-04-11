@@ -61,18 +61,9 @@ const userSchema = new Schema(
             type : String
 
         },
-        verificationOTP: String,
-        verificationOTPExpiry: Date,
         isVerified: {
             type: Boolean,
-            default: false
-        },
-
-        resetPasswordOTP: {
-            type: String
-        },
-        resetPasswordOTPExpiry: {
-            type: Date
+            default: true
         }
     },
     {

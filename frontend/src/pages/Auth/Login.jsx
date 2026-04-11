@@ -89,15 +89,25 @@ function Login() {
         </div>
 
         {/* Footer */}
-        <p className="text-center text-gray-400 text-sm">
-          Don't have an account?{" "}
-          <span
-            onClick={() => navigate("/signup")}
-            className="text-white hover:underline cursor-pointer"
-          >
-            Sign up
-          </span>
-        </p>
+        <div className="text-center space-y-2 text-gray-400 text-sm">
+          <p>
+            Don't have an account?{" "}
+            <span
+              onClick={() => navigate("/signup")}
+              className="text-white hover:underline cursor-pointer"
+            >
+              Sign up
+            </span>
+          </p>
+          <p>
+            <span
+              onClick={() => navigate("/forgot-password")}
+              className="text-white hover:underline cursor-pointer"
+            >
+              Forgot password?
+            </span>
+          </p>
+        </div>
       </Motion.div>
     </div>
   );

@@ -17,13 +17,8 @@ export const logoutUser = async () => {
   return res.data;
 };
 
-export const verifyOtp = async ({ email, otp }) => {
-  const res = await API.post("/users/verify-otp", { email, otp });
-  return res.data;
-};
-
-export const resendOtp = async ({ email }) => {
-  const res = await API.post("/users/resend-otp", { email });
+export const resetPassword = async ({ emailOrUsername, newPassword }) => {
+  const res = await API.post("/users/reset-password", { emailOrUsername, newPassword });
   return res.data;
 };
 

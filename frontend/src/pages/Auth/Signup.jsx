@@ -18,10 +18,9 @@ export default function Signup() {
 
   const mutation = useMutation({
     mutationFn: signupUser,
-    onSuccess: (_, variables) => {
-      const email = variables?.get?.("email") || form.email;
-      toast.success("Registered. Verify OTP to continue.");
-      navigate("/verify-otp", { state: { email } });
+    onSuccess: () => {
+      toast.success("Registered successfully. Please log in.");
+      navigate("/login", { replace: true });
     },
   });
 

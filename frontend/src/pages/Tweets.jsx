@@ -5,6 +5,7 @@ import useAuthStore from "../store/authStore.js";
 import {
   createTweet,
   deleteTweet,
+  getAllTweets,
   getUserTweets,
   toggleTweetLike,
   updateTweet,
@@ -21,7 +22,7 @@ function TweetCard({ tweet, currentUserId, onLike, onDelete, onUpdate, liking })
   const mine = tweet?.owner?._id === currentUserId;
 
   return (
-    <div className="rounded-2xl bg-white/5 border border-white/10 p-4">
+    <div className="group rounded-[28px] border border-white/10 bg-white/5 p-5 shadow-[0_20px_60px_-40px_rgba(255,255,255,0.35)] transition duration-300 ease-out hover:-translate-y-0.5 hover:border-white/15 hover:bg-white/10">
       <div className="flex gap-3">
         {avatar ? (
           <img src={avatar} className="w-10 h-10 rounded-full object-cover bg-white/10" />
@@ -90,14 +91,14 @@ function TweetCard({ tweet, currentUserId, onLike, onDelete, onUpdate, liking })
             </div>
           )}
 
-          <div className="mt-3 flex items-center gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <button
               onClick={() => onLike(tweet._id)}
               disabled={liking}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium transition duration-200 hover:border-white/20 hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Heart size={16} />
-              <span className="text-sm font-medium">{tweet?.likesCount || 0}</span>
+              <span>{tweet?.likesCount || 0}</span>
             </button>
           </div>
         </div>
@@ -110,11 +111,16 @@ export default function Tweets() {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const [content, setContent] = useState("");
+  const [feedType, setFeedType] = useState("all");
+  const feedQueryKey = feedType === "mine" ? ["tweets", "mine", user?._id] : ["tweets", "all"];
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["tweets", user?._id, 1],
-    enabled: !!user?._id,
-    queryFn: () => getUserTweets({ userId: user._id, page: 1, limit: 20 }),
+    queryKey: feedQueryKey,
+    enabled: feedType === "all" || !!user,
+    queryFn: () =>
+      feedType === "mine"
+        ? getUserTweets({ userId: user._id, page: 1, limit: 20 })
+        : getAllTweets({ page: 1, limit: 20 }),
     staleTime: 10_000,
   });
 
@@ -125,7 +131,7 @@ export default function Tweets() {
     onSuccess: () => {
       toast.success("Posted");
       setContent("");
-      queryClient.invalidateQueries({ queryKey: ["tweets", user?._id] });
+      queryClient.invalidateQueries({ queryKey: feedQueryKey });
     },
   });
 
@@ -133,7 +139,7 @@ export default function Tweets() {
     mutationFn: deleteTweet,
     onSuccess: () => {
       toast.success("Deleted");
-      queryClient.invalidateQueries({ queryKey: ["tweets", user?._id] });
+      queryClient.invalidateQueries({ queryKey: feedQueryKey });
     },
   });
 
@@ -141,18 +147,18 @@ export default function Tweets() {
     mutationFn: updateTweet,
     onSuccess: () => {
       toast.success("Updated");
-      queryClient.invalidateQueries({ queryKey: ["tweets", user?._id] });
+      queryClient.invalidateQueries({ queryKey: feedQueryKey });
     },
   });
 
   const likeMutation = useMutation({
     mutationFn: toggleTweetLike,
     onMutate: async (tweetId) => {
-      await queryClient.cancelQueries({ queryKey: ["tweets", user?._id] });
-      const prev = queryClient.getQueryData(["tweets", user?._id, 1]);
+      await queryClient.cancelQueries({ queryKey: feedQueryKey });
+      const prev = queryClient.getQueryData(feedQueryKey);
 
       // optimistic likesCount toggle (backend returns isLiked only)
-      queryClient.setQueryData(["tweets", user?._id, 1], (old) => {
+      queryClient.setQueryData(feedQueryKey, (old) => {
         const docs = old?.data?.docs || old?.data || old;
         if (!Array.isArray(docs)) return old;
         const nextDocs = docs.map((t) => {
@@ -168,39 +174,68 @@ export default function Tweets() {
       return { prev };
     },
     onError: (_e, _v, ctx) => {
-      if (ctx?.prev) queryClient.setQueryData(["tweets", user?._id, 1], ctx.prev);
+      if (ctx?.prev) queryClient.setQueryData(feedQueryKey, ctx.prev);
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["tweets", user?._id] });
+      queryClient.invalidateQueries({ queryKey: feedQueryKey });
     },
   });
 
   return (
-    <div className="p-6 max-w-3xl">
-      <h1 className="text-2xl font-bold">Community</h1>
-      <p className="text-sm text-gray-400 mt-1">Post updates like YouTube Community.</p>
-
-      <div className="mt-6 rounded-2xl bg-white/5 border border-white/10 p-4">
-        <div className="font-semibold">Create post</div>
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          rows={3}
-          placeholder="What’s new?"
-          className="mt-3 w-full p-3 rounded-xl bg-black border border-white/10 focus:outline-none focus:ring-2 focus:ring-white/20 resize-none"
-        />
-        <div className="mt-3 flex justify-end">
-          <button
-            onClick={() => {
-              const c = content.trim();
-              if (!c) return toast.error("Content required");
-              createMutation.mutate({ content: c });
-            }}
-            disabled={createMutation.isPending}
-            className="px-5 py-2 rounded-full bg-white text-black hover:bg-gray-200 disabled:opacity-60"
-          >
-            {createMutation.isPending ? "Posting..." : "Post"}
-          </button>
+    <div className="p-6 max-w-4xl mx-auto space-y-6">
+      <div className="rounded-[32px] border border-white/10 bg-white/5 p-6 shadow-[0_24px_80px_-44px_rgba(255,255,255,0.5)] backdrop-blur-xl transition duration-300 hover:border-white/20 hover:bg-white/10">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight">Community</h1>
+            <p className="mt-2 max-w-2xl text-sm text-gray-300">Share posts with everyone or switch to your own feed for a quick recap of your activity.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setFeedType("all")}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition duration-200 ${
+                feedType === "all"
+                  ? "bg-white text-black shadow-sm"
+                  : "bg-white/5 text-gray-300 hover:bg-white/10"
+              }`}
+            >
+              All posts
+            </button>
+            <button
+              onClick={() => setFeedType("mine")}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition duration-200 ${
+                feedType === "mine"
+                  ? "bg-white text-black shadow-sm"
+                  : "bg-white/5 text-gray-300 hover:bg-white/10"
+              }`}
+              disabled={!user}
+            >
+              My posts
+            </button>
+          </div>
+        </div>
+        <div className="mt-5 rounded-[28px] border border-white/10 bg-black/20 p-5 shadow-sm">
+          <div className="font-semibold text-white">Create post</div>
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            rows={4}
+            placeholder="What’s new?"
+            className="mt-3 w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition duration-200 focus:border-white/30 focus:ring-2 focus:ring-white/10"
+          />
+          <div className="mt-4 flex items-center justify-between gap-3 flex-wrap">
+            <span className="text-xs text-gray-400">Tip: keep it short and engaging.</span>
+            <button
+              onClick={() => {
+                const c = content.trim();
+                if (!c) return toast.error("Content required");
+                createMutation.mutate({ content: c });
+              }}
+              disabled={createMutation.isPending}
+              className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-white to-slate-200 px-6 py-2 text-sm font-semibold text-black shadow-lg shadow-white/10 transition duration-200 hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {createMutation.isPending ? "Posting..." : "Post"}
+            </button>
+          </div>
         </div>
       </div>
 

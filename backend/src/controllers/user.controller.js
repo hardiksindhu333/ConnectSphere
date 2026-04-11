@@ -7,7 +7,6 @@ import jwt from "jsonwebtoken"
 import {ObjectId} from "mongodb"
 import crypto from "crypto"
 import bcrypt from "bcrypt"; 
-import { getResendClient } from "../utils/resend.js";
 // How to register a user step by step :-
 
 // 1. ask user to fill details in frontend(username,email etc.)
@@ -53,41 +52,9 @@ const registerUser = asyncHandler(async (req, res) => {
         $or: [{ username }, { email }]
     });
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
     if (existingUser) {
-
-        if (existingUser.isVerified) {
-            throw new ApiError(400, "User already exists");
-        }
-
-        const hashedOTP = await bcrypt.hash(otp, 10);
-
-        existingUser.verificationOTP = hashedOTP;
-        existingUser.verificationOTPExpiry = Date.now() + 10 * 60 * 1000;
-        existingUser.password = password;
-
-        await existingUser.save();
-        const resend = getResendClient();
-
-
-        await resend.emails.send({
-            from: process.env.EMAIL_FROM,
-            to: existingUser.email,
-            subject: "Verify your account",
-            html: `
-            <h2>Welcome to ConnectSphere </h2>
-            <p>Your OTP is:</p>
-            <h1>${otp}</h1>
-            <p>This OTP expires in 10 minutes</p>
-        `
-        });
-
-        return res.status(200).json(
-            new ApiResponse(200, {}, "OTP resent. Please verify your email")
-        );
+        throw new ApiError(400, "User already exists");
     }
-
 
     const avatarLocalpath = req.files?.avatar?.[0]?.path;
     const coverImageLocalpath = req.files?.coverImage?.[0]?.path;
@@ -106,7 +73,6 @@ const registerUser = asyncHandler(async (req, res) => {
     if (coverImageLocalpath) {
         coverImage = await uploadOnCloudinary(coverImageLocalpath);
     }
-    const hashedOTP = await bcrypt.hash(otp, 10);
 
     const user = await User.create({
         fullName,
@@ -123,188 +89,17 @@ const registerUser = asyncHandler(async (req, res) => {
                 public_id: coverImage.public_id
             }
             : undefined,
-        verificationOTP: hashedOTP,
-        verificationOTPExpiry: Date.now() + 10 * 60 * 1000,
-        isVerified: false
+        isVerified: true
     });
 
     if (!user) {
         throw new ApiError(500, "User registration failed");
     }
 
-    const resend = getResendClient();
-
-    await resend.emails.send({
-        from: process.env.EMAIL_FROM,
-        to: user.email,
-        subject: "Verify your account",
-        html: `
-            <h2>Welcome to ConnectSphere </h2>
-            <p>Your OTP is:</p>
-            <h1>${otp}</h1>
-            <p>This OTP expires in 10 minutes</p>
-        `
-    });
-
     const createdUser = await User.findById(user._id).select("-password -refreshToken");
 
     return res.status(201).json(
-        new ApiResponse(200, createdUser, "User registered. Please verify your email")
-    );
-});
-
-
-const verifyOTP = asyncHandler(async (req, res) => {
-    const { email, otp } = req.body;
-
-    if (!email || !otp) {
-        throw new ApiError(400, "Email and OTP required");
-    }
-
-    const user = await User.findOne({ email });
-
-    if (!user || !user.verificationOTP) {
-        throw new ApiError(400, "Invalid request");
-    }
-
-    if (user.verificationOTPExpiry < Date.now()) {
-        throw new ApiError(400, "OTP expired");
-    }
-
-    //  Compare hashed OTP
-    const isMatch = await bcrypt.compare(otp, user.verificationOTP);
-
-    if (!isMatch) {
-        throw new ApiError(400, "Invalid OTP");
-    }
-
-    user.isVerified = true;
-    user.verificationOTP = undefined;
-    user.verificationOTPExpiry = undefined;
-
-    await user.save();
-
-    return res.status(200).json(
-        new ApiResponse(200, {}, "Account verified successfully")
-    );
-});
-
-
-const resendOTP = asyncHandler(async (req, res) => {
-
-    const { email } = req.body;
-
-    const user = await User.findOne({ email });
-
-    if (!user) {
-        throw new ApiError(404, "User not found");
-    }
-
-    if (user.isVerified) {
-        throw new ApiError(400, "User already verified");
-    }
-
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    const hashedOTP = await bcrypt.hash(otp, 10);
-
-    user.verificationOTP = hashedOTP;
-    user.verificationOTPExpiry = Date.now() + 10 * 60 * 1000;
-
-    await user.save();
-    const resend = getResendClient();
-
-
-    await resend.emails.send({
-        from: process.env.EMAIL_FROM,
-        to: email,
-        subject: "OTP Resent",
-        html: `<h2>${otp}</h2>`
-    });
-
-    return res.status(200).json(
-        new ApiResponse(200, {}, "OTP resent successfully")
-    );
-});
-
-
-const forgotPassword = asyncHandler(async (req, res) => {
-    const { email } = req.body;
-
-    if (!email) {
-        throw new ApiError(400, "Email is required");
-    }
-
-    const user = await User.findOne({ email });
-
-    if (!user) {
-        throw new ApiError(404, "User not found");
-    }
-
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    const hashedOTP = await bcrypt.hash(otp, 10);
-
-    user.resetPasswordOTP = hashedOTP;
-    user.resetPasswordOTPExpiry = Date.now() + 10 * 60 * 1000;
-
-    await user.save({ validateBeforeSave: false });
-
-    const resend = getResendClient();
-
-
-    await resend.emails.send({
-        from: process.env.EMAIL_FROM,
-        to: email,
-        subject: "Reset Your Password",
-        html: `
-            <h2>Password Reset</h2>
-            <p>Your OTP is:</p>
-            <h1>${otp}</h1>
-            <p>This OTP expires in 10 minutes</p>
-        `
-    });
-
-    return res.status(200).json(
-        new ApiResponse(200, {}, "Reset OTP sent to email")
-    );
-});
-
-
-const resetPassword = asyncHandler(async (req, res) => {
-    const { email, otp, newPassword } = req.body;
-
-    if (!email || !otp || !newPassword) {
-        throw new ApiError(400, "All fields are required");
-    }
-
-    const user = await User.findOne({ email });
-
-    if (!user || !user.resetPasswordOTP) {
-        throw new ApiError(400, "Invalid request");
-    }
-
-    if (user.resetPasswordOTPExpiry < Date.now()) {
-        throw new ApiError(400, "OTP expired");
-    }
-
-    const isMatch = await bcrypt.compare(otp, user.resetPasswordOTP);
-
-    if (!isMatch) {
-        throw new ApiError(400, "Invalid OTP");
-    }
-
-    user.password = newPassword;
-
-    user.resetPasswordOTP = undefined;
-    user.resetPasswordOTPExpiry = undefined;
-
-    user.refreshToken = undefined;
-
-    await user.save();
-
-    return res.status(200).json(
-        new ApiResponse(200, {}, "Password reset successful")
+        new ApiResponse(201, createdUser, "User registered successfully")
     );
 });
 
@@ -448,24 +243,59 @@ const refreshAccessToken = asyncHandler(async(req,res) =>{
 // Save user
 
 const changeCurrentPassword = asyncHandler(async(req,res) =>{
-    const {oldPassword,newPassword} = req.body
+    const { emailOrUsername, newPassword } = req.body;
 
-    const user = await User.findById(req.user?._id)
-
-    const isPasswordCorrect = await user.isPasswordCorrect(oldPassword)
-
-    if(!isPasswordCorrect){
-        throw new ApiError(400,"invalid old password")
+    if (!emailOrUsername || !newPassword) {
+        throw new ApiError(400, "Email or username and new password are required");
     }
 
-    user.password = newPassword
+    const user = await User.findById(req.user?._id);
 
-    await user.save()
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    const normalizedEmail = user.email?.toLowerCase();
+    const normalizedUsername = user.username?.toLowerCase();
+    const providedValue = emailOrUsername.trim().toLowerCase();
+
+    if (providedValue !== normalizedEmail && providedValue !== normalizedUsername) {
+        throw new ApiError(400, "Email or username does not match the signed-in account");
+    }
+
+    user.password = newPassword;
+
+    await user.save();
 
     return res
     .status(200)
-    .json(new ApiResponse(200,{},"password changed successfully"))
+    .json(new ApiResponse(200, {}, "Password changed successfully"));
 })
+
+const resetPassword = asyncHandler(async (req, res) => {
+    const { emailOrUsername, newPassword } = req.body;
+
+    if (!emailOrUsername || !newPassword) {
+        throw new ApiError(400, "Email or username and new password are required");
+    }
+
+    const normalizedValue = emailOrUsername.trim().toLowerCase();
+
+    const user = await User.findOne({
+        $or: [{ email: normalizedValue }, { username: normalizedValue }],
+    });
+
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    return res
+        .status(200)
+        .json(new ApiResponse(200, {}, "Password reset successfully"));
+});
 
 
 // What It Should Do
@@ -788,14 +618,11 @@ const getWatchHistory = asyncHandler(async(req,res) =>{
 
 
 export {registerUser,
-    verifyOTP,
-    resendOTP,
-    forgotPassword,
-    resetPassword,
     loginUser,
     logoutUser,
     refreshAccessToken,
     changeCurrentPassword,
+    resetPassword,
     getCurrentUser,
     updateAccountDetails,
     updateUserAvatar,

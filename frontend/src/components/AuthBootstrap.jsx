@@ -15,6 +15,7 @@ export default function AuthBootstrap({ children }) {
     }
     if (isError) {
       setUser(null);
+      setStatus("unauthenticated");
       return;
     }
 

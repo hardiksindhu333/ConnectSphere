@@ -5,6 +5,11 @@ export const createTweet = async ({ content }) => {
   return res.data; // ApiResponse
 };
 
+export const getAllTweets = async ({ page = 1, limit = 10 } = {}) => {
+  const res = await API.get(`/tweets`, { params: { page, limit } });
+  return res.data;
+};
+
 export const getUserTweets = async ({ userId, page = 1, limit = 10 } = {}) => {
   const res = await API.get(`/tweets/user/${userId}`, { params: { page, limit } });
   return res.data; // ApiResponse

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getMyProfile, getMyVideos, updateAccount, updateAvatar, updateCoverImage, deleteAccount } from "../api/user";
+import { getMyProfile, getMyVideos, updateAccount, updateAvatar, updateCoverImage, deleteAccount, updatePassword } from "../api/user";
 import { useState, useEffect } from "react";
 import API from "../api/axios.js";
 import { resolveMediaUrl } from "../utils/resolveMediaUrl.js";
@@ -23,6 +23,8 @@ const Profile = () => {
 
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({ username: "", fullName: "", email: "" });
+  const [passwordForm, setPasswordForm] = useState({ emailOrUsername: "", newPassword: "" });
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [newAvatarFile, setNewAvatarFile] = useState(null);
   const [newCoverFile, setNewCoverFile] = useState(null);
   const location = useLocation();
@@ -41,6 +43,15 @@ const Profile = () => {
       setProfileForm({ username: (user?.username) || "", fullName: (user?.fullName) || "", email: (user?.email) || "" });
     }
   }, [location.search, user]);
+
+  useEffect(() => {
+    if (user) {
+      setPasswordForm((prev) => ({
+        ...prev,
+        emailOrUsername: user.email || user.username || "",
+      }));
+    }
+  }, [user]);
 
   const { data: videos = [] } = useQuery({
     queryKey: ["myVideos"],
@@ -131,6 +142,15 @@ const Profile = () => {
       navigate("/signup");
     },
     onError: (err) => toast.error(err?.response?.data?.message || "Error deleting account"),
+  });
+
+  const updatePasswordMutation = useMutation({
+    mutationFn: (data) => updatePassword(data),
+    onSuccess: () => {
+      toast.success("Password updated successfully");
+      setPasswordForm((prev) => ({ ...prev, newPassword: "" }));
+    },
+    onError: (err) => toast.error(err?.response?.data?.message || "Error updating password"),
   });
 
   return (
@@ -232,6 +252,54 @@ const Profile = () => {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="mb-6 bg-black/50 border border-white/10 rounded-2xl p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold">Change password</h2>
+            <p className="text-sm text-gray-400">No OTP required. Enter your email or username and a new password.</p>
+          </div>
+          <button
+            onClick={() => setShowPasswordForm((v) => !v)}
+            className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded text-sm"
+          >
+            {showPasswordForm ? "Hide" : "Show"}
+          </button>
+        </div>
+
+        {showPasswordForm && (
+          <div className="mt-5 space-y-4">
+            <div>
+              <label className="text-sm text-gray-400">Email or Username</label>
+              <input
+                value={passwordForm.emailOrUsername}
+                onChange={(e) => setPasswordForm({ ...passwordForm, emailOrUsername: e.target.value })}
+                className="w-full mt-2 p-3 rounded-xl bg-black border border-white/10"
+                placeholder="you@example.com or username"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-400">New password</label>
+              <input
+                type="password"
+                value={passwordForm.newPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                className="w-full mt-2 p-3 rounded-xl bg-black border border-white/10"
+                placeholder="New password"
+              />
+            </div>
+
+            <button
+              onClick={() => updatePasswordMutation.mutate(passwordForm)}
+              disabled={updatePasswordMutation.isPending}
+              className="px-5 py-3 bg-white text-black rounded-full font-medium hover:bg-gray-200 disabled:opacity-60"
+            >
+              {updatePasswordMutation.isPending ? "Updating..." : "Update password"}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* VIDEOS */}

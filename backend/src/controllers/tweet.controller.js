@@ -102,6 +102,50 @@ const getUserTweets = asyncHandler(async (req, res) => {
 
 })
 
+const getAllTweets = asyncHandler(async (req, res) => {
+    const { page = 1, limit = 10 } = req.query;
+
+    const aggregate = Tweet.aggregate([
+        {
+            $sort: { createdAt: -1 }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner"
+            }
+        },
+        {
+            $unwind: "$owner"
+        },
+        {
+            $project: {
+                content: 1,
+                likesCount: 1,
+                createdAt: 1,
+                owner: {
+                    _id: 1,
+                    username: 1,
+                    avatar: 1
+                }
+            }
+        }
+    ]);
+
+    const options = {
+        page: parseInt(page),
+        limit: parseInt(limit)
+    };
+
+    const tweets = await Tweet.aggregatePaginate(aggregate, options);
+
+    return res.status(200).json(
+        new ApiResponse(200, tweets, "Tweets fetched successfully")
+    );
+});
+
 const updateTweet = asyncHandler(async (req, res) => {
 // Get tweetId from params
 // Get content from body
@@ -194,7 +238,7 @@ const toggleTweetLike = asyncHandler(async(req,res) =>{
 
     const tweet = await Tweet.findById(tweetId)
 
-    if(!tweet){
+    if (!tweet) {
         throw new ApiError(404,"tweet not found")
     }
 
@@ -238,6 +282,7 @@ const toggleTweetLike = asyncHandler(async(req,res) =>{
 
 export{
     createTweet,
+    getAllTweets,
     getUserTweets,
     updateTweet,
     deleteTweet,
