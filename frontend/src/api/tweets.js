@@ -1,7 +1,13 @@
 import API from "./axios.js";
 
-export const createTweet = async ({ content }) => {
-  const res = await API.post("/tweets", { content });
+export const createTweet = async ({ content, image }) => {
+  const form = new FormData();
+  if (content !== undefined) form.append("content", content);
+  if (image) form.append("image", image);
+
+  const res = await API.post("/tweets", form, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   return res.data; // ApiResponse
 };
 

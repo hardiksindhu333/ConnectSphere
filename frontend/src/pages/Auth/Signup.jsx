@@ -41,8 +41,8 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-2xl bg-white/5 border border-white/10 p-6">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-black text-white">
+      <div className="surface-card w-full max-w-md p-6">
         <h1 className="text-2xl font-semibold">Create account</h1>
         <p className="text-sm text-gray-400 mt-1">
           Minimal setup, YouTube-like experience.
@@ -53,27 +53,27 @@ export default function Signup() {
             value={form.fullName}
             onChange={(e) => setForm({ ...form, fullName: e.target.value })}
             placeholder="Full name"
-            className="w-full p-3 rounded-lg bg-black border border-white/10"
+            className="input-glass"
           />
           <input
             value={form.username}
             onChange={(e) => setForm({ ...form, username: e.target.value })}
             placeholder="Username"
-            className="w-full p-3 rounded-lg bg-black border border-white/10"
+            className="input-glass"
           />
           <input
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             placeholder="Email"
             type="email"
-            className="w-full p-3 rounded-lg bg-black border border-white/10"
+            className="input-glass"
           />
           <input
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             placeholder="Password"
             type="password"
-            className="w-full p-3 rounded-lg bg-black border border-white/10"
+            className="input-glass"
           />
 
           <div className="space-y-2 pt-2">
@@ -100,7 +100,7 @@ export default function Signup() {
           <button
             type="submit"
             disabled={mutation.isPending}
-            className="w-full py-3 rounded-lg bg-white text-black font-medium hover:bg-gray-200 disabled:opacity-60"
+            className="btn-primary w-full"
           >
             {mutation.isPending ? "Creating..." : "Sign up"}
           </button>

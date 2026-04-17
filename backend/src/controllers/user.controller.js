@@ -7,6 +7,16 @@ import jwt from "jsonwebtoken"
 import {ObjectId} from "mongodb"
 import crypto from "crypto"
 import bcrypt from "bcrypt"; 
+
+const getCookieOptions = () => {
+  const isProduction = process.env.NODE_ENV === "production";
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+  };
+};
+
 // How to register a user step by step :-
 
 // 1. ask user to fill details in frontend(username,email etc.)
@@ -135,11 +145,7 @@ const loginUser = asyncHandler(async (req,res)=>{
 
    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
-   const options = {
-    httpOnly :true,
-    secure: false,
-    sameSite: "lax"
-   }
+   const options = getCookieOptions();
 
    return res.status(200)
    .cookie("accessToken",accessToken,options)
@@ -173,8 +179,9 @@ const logoutUser = asyncHandler(async(req,res) =>{
     )
 
     const options = {
-        httpOnly:true,
-        secure:false
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     }
 
     return res.status(200)
@@ -214,11 +221,7 @@ const refreshAccessToken = asyncHandler(async(req,res) =>{
 
         const {accessToken , refreshToken: newRefreshToken} = await generateAcessTokenandRefreshToken(user._id)
 
-        const options = {
-            httpOnly : true,
-            secure: false,
-            sameSite : "lax"
-        }
+        const options = getCookieOptions();
 
         return res
         .status(200)

@@ -1,14 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { resolveMediaUrl } from "../utils/resolveMediaUrl.js";
+import { formatCompactNumber, timeAgo } from "../utils/formatters.js";
 
 const VideoCard = ({ video }) => {
   const navigate = useNavigate();
-
   const thumbnailUrl = resolveMediaUrl(video?.thumbnail?.url);
 
   return (
     <div
-      className="bg-white/5 p-3 rounded-xl cursor-pointer hover:bg-white/10 transition"
+      className="surface-card cursor-pointer overflow-hidden rounded-[28px] transition duration-300 hover:-translate-y-0.5 hover:bg-white/10"
       onClick={() => navigate(`/video/${video._id}`)}
     >
       {/* Thumbnail */}
@@ -16,20 +16,25 @@ const VideoCard = ({ video }) => {
         <img
           src={thumbnailUrl}
           alt="thumbnail"
-          className="w-full h-48 object-cover rounded-lg"
+          className="w-full h-48 object-cover"
           loading="lazy"
         />
       ) : (
-        <div className="w-full h-48 rounded-lg bg-white/10" />
+        <div className="w-full h-48 bg-white/10" />
       )}
 
-      <h3 className="mt-2 font-semibold">
-        {video.title}
-      </h3>
+      <div className="bg-slate-950/90 p-4">
+        <h3 className="font-semibold text-lg leading-tight text-white line-clamp-2">
+          {video.title}
+        </h3>
 
-      <p className="text-gray-400 text-sm">
-        {video.description}
-      </p>
+        <div className="mt-3 flex flex-col gap-1 text-sm text-gray-400">
+          <span>{video?.owner?.username || "Unknown channel"}</span>
+          <span>
+            {formatCompactNumber(video?.views)} views • {timeAgo(video?.createdAt)}
+          </span>
+        </div>
+      </div>
     </div>
   );
 };

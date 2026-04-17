@@ -20,7 +20,7 @@ import IconButton from "../components/ui/IconButton.jsx";
 import SubscribeButton from "../components/video/SubscribeButton.jsx";
 import CommentComposer from "../components/video/CommentComposer.jsx";
 import CommentThread from "../components/video/CommentThread.jsx";
-import { formatCompactNumber } from "../utils/formatters.js";
+import { formatCompactNumber, timeAgo } from "../utils/formatters.js";
 import { useSubscribedChannels } from "../hooks/useSubscribedChannels.js";
 import { useLikedVideos } from "../hooks/useLikedVideos.js";
 import SaveToPlaylistModal from "../components/video/SaveToPlaylistModal.jsx";
@@ -235,10 +235,14 @@ const VideoPlayer = () => {
           <h1 className="text-2xl font-bold mt-4">
             {video?.title}
           </h1>
+          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-400">
+            <span>{formatCompactNumber(video?.views)} views</span>
+            <span>•</span>
+            <span>{timeAgo(video?.createdAt)}</span>
+          </div>
 
           {/* OWNER + SUBSCRIBE */}
-          <div className="flex justify-between mt-4 items-center gap-4">
-
+          <div className="flex justify-between mt-4 items-start gap-4">
             <div className="flex gap-3 items-center">
               {ownerAvatar ? (
                 <img
@@ -262,6 +266,12 @@ const VideoPlayer = () => {
               onClick={() => subscribeMutation.mutate(video?.owner?._id)}
             />
 
+          </div>
+
+          <div className="mt-4 rounded-3xl border border-white/10 bg-white/5 p-5 text-gray-200">
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+              {video?.description}
+            </p>
           </div>
 
           {/* ACTIONS */}

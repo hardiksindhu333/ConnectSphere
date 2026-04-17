@@ -21,7 +21,7 @@ export default function ForgotPassword() {
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-3xl bg-white/5 border border-white/10 p-8">
+      <div className="surface-card w-full max-w-md p-8">
         <h1 className="text-3xl font-semibold text-white mb-2">Forgot Password</h1>
         <p className="text-gray-400 mb-6">
           Enter your email or username and a new password. No OTP is required.
@@ -34,7 +34,7 @@ export default function ForgotPassword() {
               value={form.emailOrUsername}
               onChange={(e) => setForm({ ...form, emailOrUsername: e.target.value })}
               placeholder="you@example.com or username"
-              className="w-full mt-2 p-3 rounded-xl bg-black border border-white/10 text-white"
+              className="input-glass"
             />
           </div>
 
@@ -45,14 +45,14 @@ export default function ForgotPassword() {
               value={form.newPassword}
               onChange={(e) => setForm({ ...form, newPassword: e.target.value })}
               placeholder="New password"
-              className="w-full mt-2 p-3 rounded-xl bg-black border border-white/10 text-white"
+              className="input-glass"
             />
           </div>
 
           <button
             onClick={() => mutation.mutate(form)}
             disabled={mutation.isPending}
-            className="w-full py-3 rounded-xl bg-white text-black font-medium hover:bg-gray-200 disabled:opacity-60"
+            className="btn-primary w-full"
           >
             {mutation.isPending ? "Resetting..." : "Reset password"}
           </button>

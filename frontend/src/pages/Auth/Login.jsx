@@ -30,7 +30,7 @@ function Login() {
         initial={{ opacity: 0, scale: 0.95, y: 30 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative z-10 w-full max-w-md p-8 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl shadow-[0_0_40px_rgba(255,255,255,0.05)]"
+        className="surface-card relative z-10 w-full max-w-md p-8"
       >
         {/* Title */}
         <h2 className="text-3xl font-semibold text-white text-center mb-2">
@@ -53,7 +53,7 @@ function Login() {
               onChange={(e) =>
                 setForm({ ...form, email: e.target.value })
               }
-              className="w-full p-3 rounded-lg bg-black border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition"
+              className="input-glass"
             />
           </div>
 
@@ -67,7 +67,7 @@ function Login() {
               onChange={(e) =>
                 setForm({ ...form, password: e.target.value })
               }
-              className="w-full p-3 rounded-lg bg-black border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:ring-1 focus:ring-white transition"
+              className="input-glass"
             />
           </div>
 
@@ -75,7 +75,7 @@ function Login() {
           <button
             type="submit"
             disabled={isPending}
-            className="w-full py-3 rounded-lg bg-white text-black font-medium hover:bg-gray-200 transition duration-300"
+            className="btn-primary w-full"
           >
             {isPending ? "Logging in..." : "Sign In"}
           </button>

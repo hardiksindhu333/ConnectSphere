@@ -8,7 +8,11 @@ const tweetSchema = new Schema({
     },
     content:{
         type:String,
-        required:true
+        default: ""
+    },
+    image: {
+        url: String,
+        public_id: String
     },
     likesCount:{
         type:Number,

@@ -4,7 +4,9 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js",
+    "build": "echo 'no build step for backend'"
   },
   "author": "",
   "license": "ISC",
@@ -20,9 +22,12 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
+    "express-rate-limit": "^6.11.2",
+    "helmet": "^7.2.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.17.1",
     "mongoose-aggregate-paginate-v2": "^1.1.4",
+    "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "resend": "^6.9.4"
   }

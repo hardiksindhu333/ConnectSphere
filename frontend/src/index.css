@@ -1,3 +1,49 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  background-color: #020207;
+}
+
+body {
+  min-height: 100vh;
+  background-color: #020207;
+  background-image:
+    radial-gradient(circle at top left, rgba(56, 189, 248, 0.20), transparent 20%),
+    radial-gradient(circle at 15% 15%, rgba(168, 85, 247, 0.16), transparent 16%),
+    radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.10), transparent 22%);
+  color: #f8fafc;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: rgba(56, 189, 248, 0.28);
+  color: white;
+}
+
+@layer utilities {
+  .surface-card {
+    @apply rounded-[28px] border border-white/10 bg-white/5 shadow-[0_20px_60px_-40px_rgba(255,255,255,0.35)];
+  }
+
+  .surface-panel {
+    @apply rounded-[28px] border border-white/10 bg-black/40 backdrop-blur-xl;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-full bg-gradient-to-r from-cyan-300 to-sky-300 text-black px-5 py-3 font-semibold shadow-lg shadow-cyan-500/10 transition duration-200 hover:scale-[1.01] hover:opacity-95;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-full bg-white/5 text-white px-4 py-2 font-medium border border-white/10 transition duration-200 hover:bg-white/10;
+  }
+
+  .input-glass {
+    @apply w-full rounded-2xl border border-white/10 bg-black/60 px-4 py-3 text-white outline-none transition duration-200 focus:border-white/20 focus:ring-2 focus:ring-white/10;
+  }
+}

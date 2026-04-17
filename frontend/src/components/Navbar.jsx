@@ -40,37 +40,38 @@ const Navbar = () => {
   const avatar = resolveMediaUrl(user?.avatar?.url || user?.avatar);
 
   return (
-    <div className="flex justify-between items-center px-6 py-3 border-b border-white/10 bg-black/80 backdrop-blur sticky top-0 z-50 gap-4">
-      <div className="flex items-center gap-4 min-w-0">
-        <h1
-          onClick={() => navigate("/")}
-          className="text-lg sm:text-xl font-bold cursor-pointer whitespace-nowrap"
-        >
-          ConnectSphere
-        </h1>
-
-        <div className="hidden md:flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2 w-[420px] max-w-[45vw]">
-          <Search size={16} className="text-gray-400" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search (title)..."
-            className="bg-transparent outline-none text-sm w-full text-gray-200 placeholder:text-gray-500"
-          />
-          <button
-            onClick={() => navigate(q.trim() ? `/?q=${encodeURIComponent(q.trim())}` : "/")}
-            className="text-xs px-3 py-1 rounded-full bg-white text-black hover:bg-gray-200"
+    <div className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/95 backdrop-blur-xl shadow-[0_30px_80px_-40px_rgba(0,0,0,0.4)]">
+      <div className="flex items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-4 min-w-0">
+          <h1
+            onClick={() => navigate("/")}
+            className="text-xl sm:text-2xl font-bold tracking-tight cursor-pointer whitespace-nowrap text-white"
           >
-            Search
-          </button>
-        </div>
-      </div>
+            ConnectSphere
+          </h1>
 
-      <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-2 rounded-full bg-white/5 border border-white/10 px-4 py-2 w-[420px] max-w-[45vw]">
+            <Search size={16} className="text-gray-400" />
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search (title)..."
+              className="bg-transparent outline-none text-sm w-full text-gray-200 placeholder:text-gray-500"
+            />
+            <button
+              onClick={() => navigate(q.trim() ? `/?q=${encodeURIComponent(q.trim())}` : "/")}
+              className="btn-secondary text-xs"
+            >
+              Search
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
 
         <NavLink
           to="/upload"
-          className="bg-white text-black px-4 py-2 rounded-full hover:bg-gray-200 text-sm font-medium"
+          className="btn-primary text-sm"
         >
           Upload
         </NavLink>
@@ -110,14 +111,14 @@ const Navbar = () => {
                     setOpen(false);
                     navigate("/profile?edit=1");
                   }}
-                  className="px-3 py-1 bg-white/5 hover:bg-white/10 rounded text-sm font-medium"
+                  className="btn-secondary text-sm"
                 >
                   Edit profile
                 </button>
 
                 <button
                   onClick={() => logoutMutation.mutate()}
-                  className="px-3 py-1 bg-red-500/90 hover:bg-red-500 rounded text-sm font-medium"
+                  className="rounded-full bg-red-500/90 px-3 py-1 text-sm font-medium transition hover:bg-red-500"
                 >
                   Logout
                 </button>
@@ -125,9 +126,9 @@ const Navbar = () => {
             </div>
           )}
         </div>
-
       </div>
     </div>
+  </div>
   );
 };
 

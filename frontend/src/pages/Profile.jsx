@@ -154,10 +154,10 @@ const Profile = () => {
   });
 
   return (
-    <div className="p-6 max-w-6xl mx-auto text-white">
+    <div className="p-6 max-w-6xl mx-auto text-white space-y-6">
 
       {/* PROFILE */}
-      <div className="flex items-center gap-6 mb-6">
+      <div className="surface-card flex flex-col gap-6 p-6 lg:flex-row lg:items-center lg:gap-8">
         {resolveMediaUrl(user?.avatar?.url || user?.avatar) ? (
           <img
             src={resolveMediaUrl(user?.avatar?.url || user?.avatar)}
@@ -193,21 +193,21 @@ const Profile = () => {
               <input
                 value={profileForm.username}
                 onChange={(e) => setProfileForm({ ...profileForm, username: e.target.value })}
-                className="w-full mt-1 p-2 rounded bg-black border border-white/10"
+                className="input-glass mt-1"
               />
 
               <label className="block text-xs text-gray-300 mt-3">Full name</label>
               <input
                 value={profileForm.fullName}
                 onChange={(e) => setProfileForm({ ...profileForm, fullName: e.target.value })}
-                className="w-full mt-1 p-2 rounded bg-black border border-white/10"
+                className="input-glass mt-1"
               />
 
               <label className="block text-xs text-gray-300 mt-3">Email</label>
               <input
                 value={profileForm.email}
                 onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                className="w-full mt-1 p-2 rounded bg-black border border-white/10"
+                className="input-glass mt-1"
               />
 
               <label className="block text-xs text-gray-300 mt-3">Avatar</label>
@@ -226,14 +226,14 @@ const Profile = () => {
                 className="w-full mt-1"
               />
 
-              <div className="mt-4 flex items-center gap-3">
+              <div className="mt-4 flex flex-wrap items-center gap-3">
                 <button
                   onClick={() => {
                     updateAccountMutation.mutate(profileForm);
                     if (newAvatarFile) updateAvatarMutation.mutate(newAvatarFile);
                     if (newCoverFile) updateCoverMutation.mutate(newCoverFile);
                   }}
-                  className="px-4 py-2 bg-white text-black rounded"
+                  className="btn-primary"
                   disabled={updateAccountMutation.isLoading}
                 >
                   Save changes
@@ -244,7 +244,7 @@ const Profile = () => {
                     const ok = window.confirm("Are you sure you want to delete your account? This is irreversible.");
                     if (ok) deleteAccountMutation.mutate();
                   }}
-                  className="px-4 py-2 bg-red-600 rounded text-sm"
+                  className="btn-secondary"
                 >
                   Delete account
                 </button>
@@ -254,7 +254,7 @@ const Profile = () => {
         </div>
       </div>
 
-      <div className="mb-6 bg-black/50 border border-white/10 rounded-2xl p-5">
+      <div className="surface-card p-6">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold">Change password</h2>
@@ -275,7 +275,7 @@ const Profile = () => {
               <input
                 value={passwordForm.emailOrUsername}
                 onChange={(e) => setPasswordForm({ ...passwordForm, emailOrUsername: e.target.value })}
-                className="w-full mt-2 p-3 rounded-xl bg-black border border-white/10"
+                className="input-glass mt-2"
                 placeholder="you@example.com or username"
               />
             </div>
@@ -286,7 +286,7 @@ const Profile = () => {
                 type="password"
                 value={passwordForm.newPassword}
                 onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                className="w-full mt-2 p-3 rounded-xl bg-black border border-white/10"
+                className="input-glass mt-2"
                 placeholder="New password"
               />
             </div>
@@ -294,7 +294,7 @@ const Profile = () => {
             <button
               onClick={() => updatePasswordMutation.mutate(passwordForm)}
               disabled={updatePasswordMutation.isPending}
-              className="px-5 py-3 bg-white text-black rounded-full font-medium hover:bg-gray-200 disabled:opacity-60"
+              className="btn-primary"
             >
               {updatePasswordMutation.isPending ? "Updating..." : "Update password"}
             </button>

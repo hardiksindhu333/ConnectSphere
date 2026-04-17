@@ -86,9 +86,18 @@ function TweetCard({ tweet, currentUserId, onLike, onDelete, onUpdate, liking })
               </div>
             </div>
           ) : (
-            <div className="mt-2 whitespace-pre-wrap break-words text-gray-200">
-              {tweet?.content}
-            </div>
+            <>
+              {tweet?.image?.url ? (
+                <img
+                  src={tweet.image.url}
+                  alt="Tweet"
+                  className="mt-4 w-full rounded-3xl object-cover"
+                />
+              ) : null}
+              <div className="mt-2 whitespace-pre-wrap break-words text-gray-200">
+                {tweet?.content}
+              </div>
+            </>
           )}
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -111,6 +120,8 @@ export default function Tweets() {
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const [content, setContent] = useState("");
+  const [image, setImage] = useState(null);
+  const [preview, setPreview] = useState(null);
   const [feedType, setFeedType] = useState("all");
   const feedQueryKey = feedType === "mine" ? ["tweets", "mine", user?._id] : ["tweets", "all"];
 
@@ -131,6 +142,8 @@ export default function Tweets() {
     onSuccess: () => {
       toast.success("Posted");
       setContent("");
+      setImage(null);
+      setPreview(null);
       queryClient.invalidateQueries({ queryKey: feedQueryKey });
     },
   });
@@ -222,13 +235,44 @@ export default function Tweets() {
             placeholder="What’s new?"
             className="mt-3 w-full rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-white outline-none transition duration-200 focus:border-white/30 focus:ring-2 focus:ring-white/10"
           />
+
+          <div className="mt-4 space-y-3">
+            <label className="block text-sm font-medium text-gray-300">Image (optional)</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                setImage(file);
+                setPreview(file ? URL.createObjectURL(file) : null);
+              }}
+              className="w-full text-sm text-white file:rounded-full file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-sm file:text-white hover:file:bg-white/15"
+            />
+            {preview ? (
+              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-slate-950/80">
+                <img src={preview} alt="preview" className="h-60 w-full object-cover" />
+                <button
+                  onClick={() => {
+                    setImage(null);
+                    setPreview(null);
+                  }}
+                  className="absolute right-3 top-3 rounded-full bg-black/70 px-3 py-1 text-xs text-white hover:bg-black/90"
+                >
+                  Remove
+                </button>
+              </div>
+            ) : null}
+          </div>
+
           <div className="mt-4 flex items-center justify-between gap-3 flex-wrap">
-            <span className="text-xs text-gray-400">Tip: keep it short and engaging.</span>
+            <span className="text-xs text-gray-400">Tip: add an image and caption for better engagement.</span>
             <button
               onClick={() => {
-                const c = content.trim();
-                if (!c) return toast.error("Content required");
-                createMutation.mutate({ content: c });
+                const payload = { content: content.trim(), image };
+                if (!payload.content && !payload.image) {
+                  return toast.error("Add text or image before posting");
+                }
+                createMutation.mutate(payload);
               }}
               disabled={createMutation.isPending}
               className="inline-flex items-center justify-center rounded-full bg-gradient-to-r from-white to-slate-200 px-6 py-2 text-sm font-semibold text-black shadow-lg shadow-white/10 transition duration-200 hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"

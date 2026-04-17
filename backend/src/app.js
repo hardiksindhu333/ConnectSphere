@@ -10,20 +10,58 @@
 import express from "express"
 import cookieParser from "cookie-parser"
 import cors from "cors"
+import helmet from "helmet"
+import morgan from "morgan"
+import rateLimit from "express-rate-limit"
 import { errorHandler } from "./middlewares/error.middleware.js";
 
 
 const app = express()
 
-app.use(cors({
-    origin: "http://localhost:5173",
-    credentials : true
-}))
+// Security headers
+app.use(helmet())
 
-app.use(express.json({limit : "16kb"}))
-app.use(express.urlencoded({extended:"true",limit:"16kb"}))
+// Request logging (shorter format in production)
+app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "tiny"))
+
+// Basic rate limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+})
+app.use(limiter)
+
+// CORS: apply headers per-request (reads env at runtime to avoid startup order issues)
+const getAllowedOrigins = () =>
+    (process.env.CORS_ORIGIN || "http://localhost:5173").split(",").map((s) => s.trim())
+
+app.use((req, res, next) => {
+    const allowedOrigins = getAllowedOrigins()
+    const origin = req.headers.origin
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        res.setHeader("Access-Control-Allow-Origin", origin || allowedOrigins[0])
+        res.setHeader("Access-Control-Allow-Credentials", "true")
+        res.setHeader(
+            "Access-Control-Allow-Methods",
+            "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS"
+        )
+        res.setHeader(
+            "Access-Control-Allow-Headers",
+            "Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma, Expires"
+        )
+        if (req.method === "OPTIONS") return res.sendStatus(204)
+    }
+    next()
+})
+
+app.use(express.json({ limit: "16kb" }))
+app.use(express.urlencoded({ extended: "true", limit: "16kb" }))
 app.use(express.static("public"))
 app.use(cookieParser())
+
+// Health routes
+app.get("/health", (_req, res) => res.json({ status: "ok" }))
+app.get("/ready", (_req, res) => res.json({ ready: true }))
 
 //routes
 import userRouter from "./routes/user.routes.js"

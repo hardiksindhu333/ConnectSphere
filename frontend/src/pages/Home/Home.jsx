@@ -16,17 +16,25 @@ const Home = () => {
     [];
 
   return (
-    <div className="flex-1 p-6">
-
-      <h1 className="text-2xl font-bold mb-2">
-        {q ? `Search results for "${q}"` : "Home Feed"}
-      </h1>
-      <div className="text-sm text-gray-400 mb-6">
-        {q ? "Showing related titles from your videos." : "Latest videos"}
+    <div className="flex-1">
+      <div className="surface-card p-6 mb-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight text-white">
+              {q ? `Search results for "${q}"` : "Home Feed"}
+            </h1>
+            <p className="mt-2 text-sm text-gray-400">
+              {q ? "Showing related titles from your videos." : "Latest videos"}
+            </p>
+          </div>
+          <div className="rounded-full bg-white/5 px-4 py-2 text-sm text-gray-200">
+            {videos.length} videos available
+          </div>
+        </div>
       </div>
 
       {isError && (
-        <div className="bg-red-500/10 border border-red-500/20 text-red-200 p-4 rounded-lg mb-6">
+        <div className="surface-panel border-red-500/20 text-red-200 p-4 rounded-3xl mb-6">
           Error loading videos
         </div>
       )}
@@ -40,8 +48,11 @@ const Home = () => {
       </div>
 
       {!isLoading && !isError && videos.length === 0 && (
-        <div className="text-gray-400 mt-8">
-          {q ? "No results found." : "No videos yet."}
+        <div className="surface-panel border-dashed border-white/10 text-gray-300 p-6 rounded-3xl mt-8 text-center">
+          <p className="font-semibold text-white mb-2">No videos found.</p>
+          <p className="text-sm text-gray-400">
+            {q ? "Try a different search term." : "Upload a new video to see it here."}
+          </p>
         </div>
       )}
     </div>

@@ -4,31 +4,43 @@ import { Like } from "../models/like.model.js";
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
 
 
 const createTweet = asyncHandler(async(req,res) =>{
-// Get content from request body
-// Validate content (not empty)
-// Get user ID from req.user
-// Create tweet in DB:
-// owner = userId
-// content
-// Return created tweet
+// Get content and image from request
+// Validate at least one of content or image
+// Upload image if provided
+// Create tweet in DB with owner, content, image
 
-    const {content} = req.body
+    const content = (req.body.content || "").trim();
+    const imageFilePath = req.file?.path;
 
-    if(!content || content.trim() ===""){
-        throw new ApiError(400,"content required for tweet")
+    if (!content && !imageFilePath) {
+        throw new ApiError(400, "Content or image is required for a tweet");
     }
 
-    const userId = req.user._id
+    let image;
+    if (imageFilePath) {
+        const uploaded = await uploadOnCloudinary(imageFilePath);
+        if (!uploaded?.secure_url) {
+            throw new ApiError(500, "Tweet image upload failed");
+        }
+        image = {
+            url: uploaded.secure_url,
+            public_id: uploaded.public_id,
+        };
+    }
+
+    const userId = req.user._id;
 
     const tweet = await Tweet.create({
-        content :content.trim(),
-        owner :userId
-    })
+        content,
+        owner: userId,
+        image,
+    });
 
-     return res.status(201).json(
+    return res.status(201).json(
         new ApiResponse(201, tweet, "Tweet created successfully")
     );
 })
@@ -77,6 +89,7 @@ const getUserTweets = asyncHandler(async (req, res) => {
         {
             $project:{
                 content: 1,
+                image: 1,
                 likesCount: 1,
                 createdAt: 1,
                 owner: {
@@ -123,6 +136,7 @@ const getAllTweets = asyncHandler(async (req, res) => {
         {
             $project: {
                 content: 1,
+                image: 1,
                 likesCount: 1,
                 createdAt: 1,
                 owner: {
