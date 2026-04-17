@@ -3,11 +3,11 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { logoutUser } from "../api/authApi.js";
 import toast from "react-hot-toast";
-import { Search } from "lucide-react";
+import { Search, Menu } from "lucide-react";
 import { resolveMediaUrl } from "../utils/resolveMediaUrl.js";
 import { useState, useEffect, useRef } from "react";
 
-const Navbar = () => {
+const Navbar = ({ onMobileMenuClick }) => {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
@@ -68,13 +68,21 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-4">
+          <button
+            type="button"
+            className="flex items-center justify-center rounded-full border border-white/10 bg-white/5 p-2 text-white hover:bg-white/10 md:hidden"
+            onClick={() => typeof onMobileMenuClick === "function" && onMobileMenuClick()}
+            aria-label="Open navigation menu"
+          >
+            <Menu size={18} />
+          </button>
 
-        <NavLink
-          to="/upload"
-          className="btn-primary text-sm"
-        >
-          Upload
-        </NavLink>
+          <NavLink
+            to="/upload"
+            className="btn-primary text-sm"
+          >
+            Upload
+          </NavLink>
 
         <div className="relative" ref={dropdownRef}>
           <button
