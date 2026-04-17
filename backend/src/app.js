@@ -59,6 +59,39 @@ app.use(express.urlencoded({ extended: "true", limit: "16kb" }))
 app.use(express.static("public"))
 app.use(cookieParser())
 
+// Root route for browsers
+app.get("/", (_req, res) => {
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ConnectSphere Backend</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 0; padding: 40px; background: #f7fafc; color: #1f2937; }
+          .container { max-width: 600px; margin: auto; background: #fff; padding: 24px; border-radius: 12px; box-shadow: 0 10px 30px rgba(15,23,42,0.08); }
+          h1 { margin-top: 0; }
+          a { color: #2563eb; text-decoration: none; }
+          a:hover { text-decoration: underline; }
+          .label { display: block; margin: 16px 0 8px; font-weight: 600; }
+          .hint { margin: 8px 0 0; color: #4b5563; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>ConnectSphere Backend</h1>
+          <p>This backend service is running.</p>
+          <p>Use the frontend to log in and access the app.</p>
+          <p class="label">Frontend URL:</p>
+          <p><a href="https://connect-sphere-4or3feu3p-hardik7.vercel.app" target="_blank">https://connect-sphere-4or3feu3p-hardik7.vercel.app</a></p>
+          <p class="hint">If you want to log in here, use the frontend login page instead of calling the API directly.</p>
+        </div>
+      </body>
+      </html>
+    `)
+})
+
 // Health routes
 app.get("/health", (_req, res) => res.json({ status: "ok" }))
 app.get("/ready", (_req, res) => res.json({ ready: true }))
