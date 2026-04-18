@@ -1,16 +1,27 @@
 import { motion as Motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLogin } from "../../hooks/useLogin.js";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 function Login() {
   const { mutate, isPending } = useLogin();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [form, setForm] = useState({
     email: "",
     password: "",
   });
+
+  useEffect(() => {
+    const email = searchParams.get("email");
+    const password = searchParams.get("password");
+    if (email && password) {
+      setForm({ email, password });
+      // Auto-submit for guest login
+      mutate({ email, password });
+    }
+  }, [searchParams, mutate]);
 
   const handleSubmit = (e) => {
     e.preventDefault();

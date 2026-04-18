@@ -29,8 +29,6 @@ const getCookieOptions = () => {
 // 8. check if user created or not
 // 9. return response
 
-console.log("👉 registerUser HIT");
-
 const generateAcessTokenandRefreshToken = async(userId) =>{
     try {
         const user = await User.findById(userId)

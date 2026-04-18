@@ -24,9 +24,6 @@ const connectDB = async () => {
       }
     );
     // console.log("connectionInstance :",connectionInstance)
-    console.log("DB Name:", connectionInstance.connection.name);
-    console.log("Host:", connectionInstance.connection.host);
-    console.log("Port:", connectionInstance.connection.port);
 
     console.log(`MongoDB connected: ${connectionInstance.connection.host}`);
 
